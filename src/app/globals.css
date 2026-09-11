@@ -1,8 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b0e14;
+  --surface: #12161f;
+  --surface-2: #191f2c;
+  --border: #262f3f;
+  --foreground: #e6e9ef;
+  --muted: #8b95a7;
+  --accent: #4da8ff;
+
+  --normal: #34c759;
+  --warning: #f5b301;
+  --unknown: #8b95a7;
+  --stale: #ff9f45;
+  --offline: #ff4d4f;
 }
 
 @theme inline {
@@ -12,15 +23,55 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.panel-2 {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.label-caveat {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.badge-normal { color: var(--normal); border-color: color-mix(in srgb, var(--normal) 40%, var(--border)); }
+.badge-warning { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, var(--border)); }
+.badge-unknown { color: var(--unknown); border-color: color-mix(in srgb, var(--unknown) 40%, var(--border)); }
+.badge-stale { color: var(--stale); border-color: color-mix(in srgb, var(--stale) 40%, var(--border)); }
+.badge-offline { color: var(--offline); border-color: color-mix(in srgb, var(--offline) 40%, var(--border)); }
+
+.demo-banner {
+  background: linear-gradient(90deg, #3a2a00, #4a3300);
+  color: var(--warning);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 0.3rem 0;
 }

@@ -1,69 +1,154 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { apiGet } from "@/lib/api/client";
+import { HealthBadge } from "@/components/status/health-badge";
+import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
+import { MineMap, type MapNode } from "@/components/map/mine-map";
+import type { HealthState } from "@/lib/domain/node-health";
+
+type NodeRow = {
+  node_id: number;
+  site_id: string;
+  label: string;
+  mock_latitude: number;
+  mock_longitude: number;
+  is_mock: boolean;
+  latest_risk_score: number | null;
+  last_seen_at: string | null;
+  packet_loss_pct: number | null;
+  health_state: HealthState;
+};
+
+type AlertRow = {
+  id: number;
+  severity: string;
+  state: string;
+  summary: string;
+  created_at: string;
+};
+
+export default function DashboardPage() {
+  const nodesQuery = useQuery({
+    queryKey: ["nodes"],
+    queryFn: () => apiGet<NodeRow[]>("/api/nodes"),
+  });
+  const alertsQuery = useQuery({
+    queryKey: ["alerts", "active"],
+    queryFn: () => apiGet<AlertRow[]>("/api/alerts?state=new"),
+  });
+
+  const nodes = nodesQuery.data?.data ?? [];
+  const alerts = alertsQuery.data?.data ?? [];
+  const mapNodes: MapNode[] = nodes.map((n) => ({
+    node_id: n.node_id,
+    label: n.label,
+    mock_latitude: n.mock_latitude,
+    mock_longitude: n.mock_longitude,
+    health_state: n.health_state,
+    latest_risk_score: n.latest_risk_score,
+  }));
+
+  const healthy = nodes.filter((n) => n.health_state === "normal").length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col gap-6">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatTile label="Nodes" value={nodes.length} />
+        <StatTile label="Healthy" value={`${healthy}/${nodes.length}`} />
+        <StatTile label="Active alerts" value={alerts.length} />
+        <StatTile
+          label="Fuzzy Risk Index"
+          value={
+            nodes.length > 0
+              ? Math.max(...nodes.map((n) => n.latest_risk_score ?? 0)).toFixed(2)
+              : "—"
+          }
+          caption={<FuzzyIndexLabel />}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+      </section>
+
+      <section className="panel p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold">Node map</h2>
+          <MockPositionLabel />
+        </div>
+        {nodesQuery.isLoading ? (
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            Loading nodes…
           </p>
+        ) : (
+          <MineMap nodes={mapNodes} />
+        )}
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div className="panel p-4">
+          <h2 className="font-semibold mb-3">Nodes</h2>
+          <ul className="flex flex-col gap-2">
+            {nodes.map((n) => (
+              <li key={n.node_id}>
+                <Link
+                  href={`/nodes/${n.node_id}`}
+                  className="flex items-center justify-between panel-2 px-3 py-2 rounded-md hover:opacity-90"
+                >
+                  <span>{n.label}</span>
+                  <HealthBadge state={n.health_state} />
+                </Link>
+              </li>
+            ))}
+            {nodes.length === 0 && !nodesQuery.isLoading && (
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                No nodes seeded yet.
+              </p>
+            )}
+          </ul>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="panel p-4">
+          <h2 className="font-semibold mb-3">Active alerts</h2>
+          {alerts.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              No active alerts. (Alert engine is not built yet in this pass — this is a
+              genuinely empty state, not a placeholder.)
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {alerts.map((a) => (
+                <li key={a.id}>
+                  <Link href={`/alerts/${a.id}`} className="block panel-2 px-3 py-2 rounded-md">
+                    <div className="text-sm font-medium">{a.summary}</div>
+                    <div className="text-xs" style={{ color: "var(--muted)" }}>
+                      {a.severity} · {a.state}
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      </main>
+      </section>
+    </div>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  caption,
+}: {
+  label: string;
+  value: string | number;
+  caption?: React.ReactNode;
+}) {
+  return (
+    <div className="panel p-4">
+      <div className="text-xs uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+        {label}
+      </div>
+      <div className="text-2xl font-semibold mt-1">{value}</div>
+      {caption && <div className="mt-1">{caption}</div>}
     </div>
   );
 }
