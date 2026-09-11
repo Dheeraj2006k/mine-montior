@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiGet } from "@/lib/api/client";
 import { HealthBadge } from "@/components/status/health-badge";
+import { RiskBadge } from "@/components/status/risk-badge";
 import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
 import type { HealthState } from "@/lib/domain/node-health";
 
@@ -72,7 +73,17 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat label="Risk score" value={node.latest_risk_score ?? "—"} caption={<FuzzyIndexLabel />} />
+        <div className="panel p-4">
+          <div className="text-xs uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+            Risk score
+          </div>
+          <div className="mt-1.5">
+            <RiskBadge score={node.latest_risk_score} size="lg" />
+          </div>
+          <div className="mt-1.5">
+            <FuzzyIndexLabel />
+          </div>
+        </div>
         <Stat
           label="Packet loss"
           value={node.packet_loss_pct != null ? `${node.packet_loss_pct}%` : "—"}

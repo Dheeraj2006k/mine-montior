@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiGet } from "@/lib/api/client";
 import { HealthBadge } from "@/components/status/health-badge";
+import { RiskBadge } from "@/components/status/risk-badge";
 import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
 import { MineMap, type MapNode } from "@/components/map/mine-map";
+import { LiveSensorFeed } from "@/components/nodes/live-sensor-feed";
 import type { HealthState } from "@/lib/domain/node-health";
 
 type NodeRow = {
@@ -29,11 +31,28 @@ type AlertRow = {
   created_at: string;
 };
 
+type PredictedZoneEntry = { node_id?: number; severity_0_to_1?: number };
+
+type PredictionRow = {
+  model_version: string;
+  predicted_zone: PredictedZoneEntry[];
+  trend: string;
+  time_to_threshold: { low_days: number | null; high_days: number | null; confidence: number | null };
+  generated_at: string | null;
+  is_stale: boolean;
+};
+
 const SEVERITY_COLOR: Record<string, string> = {
   info: "var(--unknown)",
   warning: "var(--warning)",
   high: "var(--stale)",
   critical: "var(--offline)",
+};
+
+const TREND_STYLE: Record<string, { arrow: string; color: string }> = {
+  accelerating: { arrow: "↑", color: "var(--offline)" },
+  stable: { arrow: "→", color: "var(--muted)" },
+  decelerating: { arrow: "↓", color: "var(--normal)" },
 };
 
 export default function DashboardPage() {
@@ -44,6 +63,10 @@ export default function DashboardPage() {
   const alertsQuery = useQuery({
     queryKey: ["alerts", "all"],
     queryFn: () => apiGet<AlertRow[]>("/api/alerts"),
+  });
+  const predictionQuery = useQuery({
+    queryKey: ["prediction"],
+    queryFn: () => apiGet<PredictionRow>("/api/predictions/latest"),
   });
 
   const nodes = nodesQuery.data?.data ?? [];
@@ -61,6 +84,13 @@ export default function DashboardPage() {
 
   const healthy = nodes.filter((n) => n.health_state === "normal").length;
   const maxRisk = nodes.length > 0 ? Math.max(...nodes.map((n) => n.latest_risk_score ?? 0)) : null;
+
+  const prediction = predictionQuery.data?.data;
+  const predictionSource = predictionQuery.data?.meta.source;
+  const nodeLabelById = new Map(nodes.map((n) => [n.node_id, n.label]));
+  const zoneEntries = (prediction?.predicted_zone ?? []).filter(
+    (e): e is Required<PredictedZoneEntry> => typeof e.node_id === "number" && typeof e.severity_0_to_1 === "number",
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,12 +113,20 @@ export default function DashboardPage() {
           value={alerts.length}
           tone={alerts.length > 0 ? "danger" : undefined}
         />
-        <StatTile
-          label="Fuzzy Risk Index"
-          value={maxRisk != null ? maxRisk.toFixed(2) : "—"}
-          caption={<FuzzyIndexLabel />}
-        />
+        <div className="panel p-4">
+          <div className="text-xs uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+            Peak risk
+          </div>
+          <div className="mt-1.5">
+            {maxRisk != null ? <RiskBadge score={maxRisk} size="lg" /> : <span className="text-2xl font-semibold">—</span>}
+          </div>
+          <div className="mt-1.5">
+            <FuzzyIndexLabel />
+          </div>
+        </div>
       </section>
+
+      <LiveSensorFeed nodes={nodes.map((n) => ({ node_id: n.node_id, label: n.label, health_state: n.health_state }))} />
 
       <section className="panel p-4 md:p-5">
         <div className="flex items-center justify-between mb-3">
@@ -101,6 +139,128 @@ export default function DashboardPage() {
           </p>
         ) : (
           <MineMap nodes={mapNodes} />
+        )}
+      </section>
+
+      <section className="panel p-4 md:p-5">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h2 className="text-sm font-semibold">Prediction</h2>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5"
+              style={{
+                color: predictionSource === "live" ? "var(--normal)" : "var(--faint)",
+                background:
+                  predictionSource === "live"
+                    ? "color-mix(in srgb, var(--normal) 14%, transparent)"
+                    : "var(--surface-2)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {predictionSource === "live" ? "live" : "mock"}
+            </span>
+            {prediction?.is_stale && (
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5"
+                style={{
+                  color: "var(--warning)",
+                  background: "color-mix(in srgb, var(--warning) 14%, transparent)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                stale
+              </span>
+            )}
+            <Link href="/twin" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
+              View in 3D twin →
+            </Link>
+          </div>
+        </div>
+
+        {!prediction || zoneEntries.length === 0 ? (
+          <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
+            No prediction available yet — the ML service hasn&apos;t written a result. This is an
+            honest empty state, not a placeholder.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+                  Trend
+                </div>
+                <div
+                  className="text-lg font-semibold mt-0.5 flex items-center gap-1.5"
+                  style={{ color: TREND_STYLE[prediction.trend]?.color ?? "var(--foreground)" }}
+                >
+                  <span>{TREND_STYLE[prediction.trend]?.arrow ?? "•"}</span>
+                  <span className="capitalize">{prediction.trend}</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+                  Time to threshold
+                </div>
+                <div className="text-lg font-semibold mt-0.5">
+                  {prediction.time_to_threshold.low_days != null && prediction.time_to_threshold.high_days != null
+                    ? `${prediction.time_to_threshold.low_days}–${prediction.time_to_threshold.high_days}d`
+                    : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+                  Confidence
+                </div>
+                <div className="text-lg font-semibold mt-0.5">
+                  {prediction.time_to_threshold.confidence != null
+                    ? `${Math.round(prediction.time_to_threshold.confidence * 100)}%`
+                    : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
+                  Model version
+                </div>
+                <div className="text-lg font-semibold mt-0.5 font-mono">{prediction.model_version}</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-faint mb-1.5" style={{ color: "var(--faint)" }}>
+                Predicted zone severity by node
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {zoneEntries.map((z) => (
+                  <div key={z.node_id} className="flex items-center gap-3">
+                    <span className="text-xs w-16 shrink-0">{nodeLabelById.get(z.node_id) ?? `Node ${z.node_id}`}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--surface-2)" }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.round(z.severity_0_to_1 * 100)}%`,
+                          background:
+                            z.severity_0_to_1 >= 0.85
+                              ? "var(--offline)"
+                              : z.severity_0_to_1 >= 0.65
+                                ? "var(--stale)"
+                                : z.severity_0_to_1 >= 0.4
+                                  ? "var(--warning)"
+                                  : "var(--normal)",
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-faint w-10 text-right" style={{ color: "var(--faint)" }}>
+                      {z.severity_0_to_1.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="label-caveat self-start">
+              Model output — not observed. Never render as a single date, always a range.
+            </p>
+          </div>
         )}
       </section>
 
@@ -122,9 +282,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium">{n.label}</span>
-                  <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>
-                    risk {n.latest_risk_score?.toFixed(2) ?? "—"}
-                  </span>
+                  <RiskBadge score={n.latest_risk_score} />
                 </div>
                 <HealthBadge state={n.health_state} />
               </Link>

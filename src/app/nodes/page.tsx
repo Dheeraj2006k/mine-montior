@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiGet } from "@/lib/api/client";
 import { HealthBadge } from "@/components/status/health-badge";
+import { RiskBadge } from "@/components/status/risk-badge";
 import { MockPositionLabel } from "@/components/labels";
 import type { HealthState } from "@/lib/domain/node-health";
 
@@ -57,8 +58,8 @@ export default function NodesPage() {
                 <td>
                   <HealthBadge state={n.health_state} />
                 </td>
-                <td className="text-muted" style={{ color: "var(--muted)" }}>
-                  {n.latest_risk_score?.toFixed(2) ?? "—"}
+                <td>
+                  <RiskBadge score={n.latest_risk_score} />
                 </td>
                 <td className="text-muted" style={{ color: "var(--muted)" }}>
                   {n.packet_loss_pct != null ? `${n.packet_loss_pct}%` : "—"}
