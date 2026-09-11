@@ -24,38 +24,46 @@ export default function NodesPage() {
   const nodes = query.data?.data ?? [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Nodes</h1>
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-lg font-semibold">Nodes</h1>
+          <p className="text-sm text-muted mt-0.5" style={{ color: "var(--muted)" }}>
+            {nodes.length} sensor node{nodes.length === 1 ? "" : "s"}
+          </p>
+        </div>
         <MockPositionLabel />
       </div>
+
       <div className="panel overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="data-table">
           <thead>
-            <tr className="text-left" style={{ color: "var(--muted)" }}>
-              <th className="px-4 py-2">Node</th>
-              <th className="px-4 py-2">Health</th>
-              <th className="px-4 py-2">Risk score</th>
-              <th className="px-4 py-2">Packet loss</th>
-              <th className="px-4 py-2">Last seen</th>
+            <tr>
+              <th>Node</th>
+              <th>Health</th>
+              <th>Risk score</th>
+              <th>Packet loss</th>
+              <th>Last seen</th>
             </tr>
           </thead>
           <tbody>
             {nodes.map((n) => (
-              <tr key={n.node_id} className="border-t" style={{ borderColor: "var(--border)" }}>
-                <td className="px-4 py-2">
-                  <Link href={`/nodes/${n.node_id}`} className="hover:underline">
+              <tr key={n.node_id}>
+                <td>
+                  <Link href={`/nodes/${n.node_id}`} className="font-medium hover:underline">
                     {n.label}
                   </Link>
                 </td>
-                <td className="px-4 py-2">
+                <td>
                   <HealthBadge state={n.health_state} />
                 </td>
-                <td className="px-4 py-2">{n.latest_risk_score ?? "—"}</td>
-                <td className="px-4 py-2">
+                <td className="text-muted" style={{ color: "var(--muted)" }}>
+                  {n.latest_risk_score?.toFixed(2) ?? "—"}
+                </td>
+                <td className="text-muted" style={{ color: "var(--muted)" }}>
                   {n.packet_loss_pct != null ? `${n.packet_loss_pct}%` : "—"}
                 </td>
-                <td className="px-4 py-2">
+                <td className="text-muted" style={{ color: "var(--muted)" }}>
                   {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "—"}
                 </td>
               </tr>
@@ -63,7 +71,7 @@ export default function NodesPage() {
           </tbody>
         </table>
         {nodes.length === 0 && !query.isLoading && (
-          <p className="px-4 py-4 text-sm" style={{ color: "var(--muted)" }}>
+          <p className="px-4 py-6 text-sm text-muted" style={{ color: "var(--muted)" }}>
             No nodes seeded yet.
           </p>
         )}

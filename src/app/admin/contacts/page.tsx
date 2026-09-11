@@ -65,92 +65,91 @@ export default function ContactsAdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold">Contacts</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--offline)" }}>
-          No auth/role gating in this build pass — this page and its API hold PII (phone/email)
-          and are currently reachable by anyone with the URL. Treat as a known gap to close
-          before any real deployment (plan §13.2: &quot;treat it like a password table&quot;).
-        </p>
+        <h1 className="text-lg font-semibold">Contacts</h1>
+        <div
+          className="inline-flex items-center gap-1.5 mt-2 text-xs rounded-full px-2.5 py-1"
+          style={{ color: "var(--offline)", background: "color-mix(in srgb, var(--offline) 12%, transparent)" }}
+        >
+          Unrestricted access — no auth gating yet. Holds PII; close this before real deployment.
+        </div>
       </div>
 
       <form
-        className="panel p-4 grid gap-3 sm:grid-cols-2"
+        className="panel p-4 md:p-5 grid gap-3 sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           createMutation.mutate();
         }}
       >
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
         />
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Role (e.g. Safety Officer)"
           value={role}
           onChange={(e) => setRole(e.target.value)}
           required
         />
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Phone (E.164, e.g. +91XXXXXXXXXX)"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <label className="text-sm flex items-center gap-2">
-          Escalation priority
+          <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>Escalation priority</span>
           <input
             type="number"
             min={1}
-            className="panel-2 px-3 py-2 rounded-md w-20"
+            className="input w-20"
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value))}
           />
         </label>
-        <button
-          type="submit"
-          className="rounded-md px-3 py-2 font-medium"
-          style={{ background: "var(--accent)", color: "#04101f" }}
-          disabled={createMutation.isPending}
-        >
+        <button type="submit" className="btn btn-primary sm:col-span-2" disabled={createMutation.isPending}>
           {createMutation.isPending ? "Adding…" : "Add contact"}
         </button>
       </form>
 
-      <div className="panel divide-y" style={{ borderColor: "var(--border)" }}>
+      <div className="panel overflow-hidden">
         {contacts.map((c) => (
-          <div key={c.id} className="px-4 py-3 flex items-center justify-between">
+          <div
+            key={c.id}
+            className="panel-row px-4 md:px-5 py-3.5 flex items-center justify-between border-b last:border-b-0"
+            style={{ borderColor: "var(--border)" }}
+          >
             <div>
-              <div className="font-medium">
-                {c.full_name} <span style={{ color: "var(--muted)" }}>— {c.role}</span>
+              <div className="text-sm font-medium">
+                {c.full_name}{" "}
+                <span className="text-muted font-normal" style={{ color: "var(--muted)" }}>
+                  — {c.role}
+                </span>
               </div>
-              <div className="text-xs" style={{ color: "var(--muted)" }}>
+              <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
                 priority {c.escalation_priority} · {c.channels.join(", ")}
                 {c.phone_e164 && ` · ${c.phone_e164}`}
                 {c.email && ` · ${c.email}`}
               </div>
             </div>
-            <button
-              onClick={() => deactivateMutation.mutate(c.id)}
-              className="text-xs"
-              style={{ color: "var(--offline)" }}
-            >
+            <button onClick={() => deactivateMutation.mutate(c.id)} className="btn btn-ghost btn-danger text-xs">
               Deactivate
             </button>
           </div>
         ))}
         {contacts.length === 0 && !query.isLoading && (
-          <p className="px-4 py-6 text-sm" style={{ color: "var(--muted)" }}>
+          <p className="px-4 md:px-5 py-8 text-sm text-muted text-center" style={{ color: "var(--muted)" }}>
             No active contacts. Notifications will have nothing to notify until one exists.
           </p>
         )}

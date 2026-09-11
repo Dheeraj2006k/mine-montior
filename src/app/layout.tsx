@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "IRIS — Intelligent RealTime Instability Sensing",
-  description: "AI-enabled smart mine subsidence monitoring platform — prototype cycle 1",
+  description: "AI-enabled real-time mine subsidence monitoring platform",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -26,7 +26,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <div className="demo-banner">DEMO — prototype cycle 1, mock node positions, no InSAR/ML data yet</div>
         <QueryProvider>
           <AppShell>{children}</AppShell>
         </QueryProvider>

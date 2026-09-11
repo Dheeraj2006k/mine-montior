@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiGet } from "@/lib/api/client";
@@ -56,15 +57,21 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <Link href="/nodes" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
+        ← All nodes
+      </Link>
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-semibold">{node.label}</h1>
-          <MockPositionLabel />
+          <h1 className="text-lg font-semibold">{node.label}</h1>
+          <div className="mt-1">
+            <MockPositionLabel />
+          </div>
         </div>
         <HealthBadge state={node.health_state} />
       </div>
 
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="Risk score" value={node.latest_risk_score ?? "—"} caption={<FuzzyIndexLabel />} />
         <Stat
           label="Packet loss"
@@ -77,30 +84,30 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
         <Stat label="Site" value={node.site_id} />
       </section>
 
-      <section className="panel p-4">
-        <h2 className="font-semibold mb-3">Risk score over time</h2>
-        <ChartBlock data={history} dataKey="risk_score" color="#4da8ff" />
+      <section className="panel p-4 md:p-5">
+        <h2 className="text-sm font-semibold mb-3">Risk score over time</h2>
+        <ChartBlock data={history} dataKey="risk_score" color="var(--accent)" />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <div className="panel p-4">
-          <h2 className="font-semibold mb-3">Tilt (filtered)</h2>
-          <ChartBlock data={history} dataKey="tilt_x_filt" color="#f5b301" />
+        <div className="panel p-4 md:p-5">
+          <h2 className="text-sm font-semibold mb-3">Tilt (filtered)</h2>
+          <ChartBlock data={history} dataKey="tilt_x_filt" color="var(--warning)" />
         </div>
-        <div className="panel p-4">
-          <h2 className="font-semibold mb-3">Vibration (filtered, unit TBD)</h2>
-          <ChartBlock data={history} dataKey="vibration_filt" color="#ff9f45" />
+        <div className="panel p-4 md:p-5">
+          <h2 className="text-sm font-semibold mb-3">Vibration (filtered, unit TBD)</h2>
+          <ChartBlock data={history} dataKey="vibration_filt" color="var(--stale)" />
         </div>
-        <div className="panel p-4">
-          <h2 className="font-semibold mb-3">Displacement (filtered, mm)</h2>
-          <ChartBlock data={history} dataKey="displacement_filt" color="#34c759" />
+        <div className="panel p-4 md:p-5">
+          <h2 className="text-sm font-semibold mb-3">Displacement (filtered, mm)</h2>
+          <ChartBlock data={history} dataKey="displacement_filt" color="var(--normal)" />
         </div>
       </section>
 
       {history.length === 0 && !historyQuery.isLoading && (
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          No readings yet for this node. Run the simulator (`npm run simulate`) or send real
-          gateway traffic to see this chart populate.
+        <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
+          No readings yet for this node. Run the simulator (<code>npm run simulate</code>) or send
+          real gateway traffic to see this chart populate.
         </p>
       )}
     </div>
@@ -110,11 +117,11 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
 function Stat({ label, value, caption }: { label: string; value: string | number; caption?: React.ReactNode }) {
   return (
     <div className="panel p-4">
-      <div className="text-xs uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+      <div className="text-xs uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
         {label}
       </div>
-      <div className="text-xl font-semibold mt-1">{value}</div>
-      {caption && <div className="mt-1">{caption}</div>}
+      <div className="text-xl font-semibold mt-1.5">{value}</div>
+      {caption && <div className="mt-1.5">{caption}</div>}
     </div>
   );
 }

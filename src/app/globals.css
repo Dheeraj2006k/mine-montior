@@ -1,19 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0e14;
-  --surface: #12161f;
-  --surface-2: #191f2c;
-  --border: #262f3f;
-  --foreground: #e6e9ef;
-  --muted: #8b95a7;
-  --accent: #4da8ff;
+  --bg: #08090b;
+  --bg-elevated: #0d0f12;
+  --surface: #131519;
+  --surface-2: #191c21;
+  --surface-hover: #1e2126;
+  --border: #22252b;
+  --border-strong: #2c2f36;
 
-  --normal: #34c759;
-  --warning: #f5b301;
-  --unknown: #8b95a7;
-  --stale: #ff9f45;
-  --offline: #ff4d4f;
+  --foreground: #eceef1;
+  --muted: #8d929c;
+  --faint: #5b5f68;
+
+  --accent: #5b8def;
+  --accent-strong: #7ba3f5;
+
+  --normal: #3ecf7e;
+  --warning: #f0a93a;
+  --unknown: #8d929c;
+  --stale: #f28b4d;
+  --offline: #ef5a5a;
+
+  --background: var(--bg);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --radius: 10px;
 }
 
 @theme inline {
@@ -23,55 +36,173 @@
   --font-mono: var(--font-geist-mono);
 }
 
+* {
+  border-color: var(--border);
+}
+
 body {
-  background: var(--background);
+  background: var(--bg);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Surfaces */
 
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 .panel-2 {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
-.label-caveat {
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-style: italic;
+.panel-row {
+  transition: background-color 120ms ease;
 }
+.panel-row:hover {
+  background: var(--surface-hover);
+}
+
+/* Text */
+
+.text-muted { color: var(--muted); }
+.text-faint { color: var(--faint); }
+
+.label-caveat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  line-height: 1.4;
+}
+.label-caveat::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--faint);
+  flex-shrink: 0;
+}
+
+/* Badges */
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  padding: 0.15rem 0.5rem;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 
-.badge-normal { color: var(--normal); border-color: color-mix(in srgb, var(--normal) 40%, var(--border)); }
-.badge-warning { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, var(--border)); }
-.badge-unknown { color: var(--unknown); border-color: color-mix(in srgb, var(--unknown) 40%, var(--border)); }
-.badge-stale { color: var(--stale); border-color: color-mix(in srgb, var(--stale) 40%, var(--border)); }
-.badge-offline { color: var(--offline); border-color: color-mix(in srgb, var(--offline) 40%, var(--border)); }
+.badge-normal { color: var(--normal); background: color-mix(in srgb, var(--normal) 14%, transparent); }
+.badge-warning { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.badge-unknown { color: var(--unknown); background: color-mix(in srgb, var(--unknown) 14%, transparent); }
+.badge-stale { color: var(--stale); background: color-mix(in srgb, var(--stale) 14%, transparent); }
+.badge-offline { color: var(--offline); background: color-mix(in srgb, var(--offline) 14%, transparent); }
 
-.demo-banner {
-  background: linear-gradient(90deg, #3a2a00, #4a3300);
-  color: var(--warning);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--foreground);
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #04101f;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-align: center;
-  padding: 0.3rem 0;
+}
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+
+.btn-danger {
+  color: var(--offline);
+  border-color: color-mix(in srgb, var(--offline) 35%, var(--border-strong));
+}
+.btn-danger:hover { background: color-mix(in srgb, var(--offline) 10%, transparent); }
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover { background: var(--surface-2); color: var(--foreground); }
+
+/* Inputs */
+
+.input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 120ms ease;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--faint); }
+
+/* Tables */
+
+.data-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+.data-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tbody tr { transition: background-color 120ms ease; }
+.data-table tbody tr:hover { background: var(--surface-hover); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* Status dot */
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
 }

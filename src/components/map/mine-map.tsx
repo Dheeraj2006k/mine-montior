@@ -54,7 +54,14 @@ export function MineMap({ nodes }: { nodes: MapNode[] }) {
     });
     mapRef.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
+    // MapLibre measures its container at construction time; in a flex
+    // layout the container can still be mid-resize then, leaving the map
+    // canvas stuck at a stale (often too-narrow) size. Keep it in sync.
+    const resizeObserver = new ResizeObserver(() => mapRef.current?.resize());
+    resizeObserver.observe(containerRef.current);
+
     return () => {
+      resizeObserver.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
     };

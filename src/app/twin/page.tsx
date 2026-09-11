@@ -59,12 +59,12 @@ export default function TwinPage() {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Digital twin</h1>
-          <button className="text-sm underline" onClick={() => setReduceMotion(false)}>
+          <h1 className="text-lg font-semibold">Digital twin</h1>
+          <button className="btn btn-ghost text-xs" onClick={() => setReduceMotion(false)}>
             Enable 3D view
           </button>
         </div>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
+        <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
           Reduced-motion mode is on. Every fact reachable here is also reachable on{" "}
           <Link href="/nodes" className="underline">
             the 2D node list
@@ -79,10 +79,12 @@ export default function TwinPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-semibold">Digital twin</h1>
-          <MockPositionLabel />
+          <h1 className="text-lg font-semibold">Digital twin</h1>
+          <div className="mt-1">
+            <MockPositionLabel />
+          </div>
         </div>
-        <button className="text-sm underline" style={{ color: "var(--muted)" }} onClick={() => setReduceMotion(true)}>
+        <button className="btn btn-ghost text-xs" onClick={() => setReduceMotion(true)}>
           Reduce motion / 2D only
         </button>
       </div>
@@ -95,16 +97,16 @@ export default function TwinPage() {
       </div>
 
       {!hasPrediction && (
-        <p className="text-xs" style={{ color: "var(--muted)" }}>
+        <p className="text-xs text-faint" style={{ color: "var(--faint)" }}>
           No prediction data available yet (ML service not connected in this build) — the terrain
           below is intentionally flat. Flat is not a claim of zero risk; it means no prediction
           exists to render.
         </p>
       )}
 
-      <div className="panel" style={{ height: 480 }}>
+      <div className="panel overflow-hidden" style={{ height: 480 }}>
         {nodesQuery.isLoading ? (
-          <p className="p-4" style={{ color: "var(--muted)" }}>
+          <p className="p-4 text-muted" style={{ color: "var(--muted)" }}>
             Loading nodes…
           </p>
         ) : (
@@ -113,7 +115,7 @@ export default function TwinPage() {
       </div>
 
       <div className="panel p-4 flex items-center gap-3">
-        <span className="text-xs" style={{ color: "var(--muted)" }}>
+        <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>
           Past
         </span>
         <input
@@ -125,7 +127,7 @@ export default function TwinPage() {
           onChange={(e) => setScrubT(Number(e.target.value))}
           className="flex-1"
         />
-        <span className="text-xs" style={{ color: "var(--muted)" }}>
+        <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>
           Predicted
         </span>
       </div>

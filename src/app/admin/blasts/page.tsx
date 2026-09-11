@@ -58,58 +58,54 @@ export default function BlastsAdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Blast schedule</h1>
-      <p className="text-sm" style={{ color: "var(--muted)" }}>
-        No auth/role gating in this build pass — this page is reachable by anyone. Overlapping
-        a scheduled blast never lowers the severity shown on the dashboard; it only downgrades
-        notification urgency once notifications are wired up (PRD §7.3).
-      </p>
+      <div>
+        <h1 className="text-lg font-semibold">Blast schedule</h1>
+        <p className="text-sm text-muted mt-1" style={{ color: "var(--muted)" }}>
+          Overlapping a scheduled blast never lowers the severity shown on the dashboard — it
+          only downgrades notification urgency (PRD §7.3).
+        </p>
+      </div>
 
       <form
-        className="panel p-4 grid gap-3 sm:grid-cols-2"
+        className="panel p-4 md:p-5 grid gap-3 sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           createMutation.mutate();
         }}
       >
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Panel label (e.g. Panel A3)"
           value={panelLabel}
           onChange={(e) => setPanelLabel(e.target.value)}
         />
         <input
-          className="panel-2 px-3 py-2 rounded-md"
+          className="input"
           placeholder="Note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <label className="text-sm flex flex-col gap-1">
-          Planned start
+        <label className="text-sm flex flex-col gap-1.5">
+          <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>Planned start</span>
           <input
             type="datetime-local"
-            className="panel-2 px-3 py-2 rounded-md"
+            className="input"
             value={start}
             onChange={(e) => setStart(e.target.value)}
             required
           />
         </label>
-        <label className="text-sm flex flex-col gap-1">
-          Planned end
+        <label className="text-sm flex flex-col gap-1.5">
+          <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>Planned end</span>
           <input
             type="datetime-local"
-            className="panel-2 px-3 py-2 rounded-md"
+            className="input"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
             required
           />
         </label>
-        <button
-          type="submit"
-          className="sm:col-span-2 rounded-md px-3 py-2 font-medium"
-          style={{ background: "var(--accent)", color: "#04101f" }}
-          disabled={createMutation.isPending}
-        >
+        <button type="submit" className="btn btn-primary sm:col-span-2" disabled={createMutation.isPending}>
           {createMutation.isPending ? "Adding…" : "Add blast window"}
         </button>
         {createMutation.isError && (
@@ -119,27 +115,27 @@ export default function BlastsAdminPage() {
         )}
       </form>
 
-      <div className="panel divide-y" style={{ borderColor: "var(--border)" }}>
+      <div className="panel overflow-hidden">
         {blasts.map((b) => (
-          <div key={b.id} className="px-4 py-3 flex items-center justify-between">
+          <div
+            key={b.id}
+            className="panel-row px-4 md:px-5 py-3.5 flex items-center justify-between border-b last:border-b-0"
+            style={{ borderColor: "var(--border)" }}
+          >
             <div>
-              <div className="font-medium">{b.panel_label ?? "(unlabelled panel)"}</div>
-              <div className="text-xs" style={{ color: "var(--muted)" }}>
+              <div className="text-sm font-medium">{b.panel_label ?? "(unlabelled panel)"}</div>
+              <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
                 {new Date(b.planned_start).toLocaleString()} → {new Date(b.planned_end).toLocaleString()}
               </div>
-              {b.note && <div className="text-xs mt-1">{b.note}</div>}
+              {b.note && <div className="text-xs mt-1 text-faint" style={{ color: "var(--faint)" }}>{b.note}</div>}
             </div>
-            <button
-              onClick={() => deleteMutation.mutate(b.id)}
-              className="text-xs"
-              style={{ color: "var(--offline)" }}
-            >
+            <button onClick={() => deleteMutation.mutate(b.id)} className="btn btn-ghost btn-danger text-xs">
               Delete
             </button>
           </div>
         ))}
         {blasts.length === 0 && !query.isLoading && (
-          <p className="px-4 py-6 text-sm" style={{ color: "var(--muted)" }}>
+          <p className="px-4 md:px-5 py-8 text-sm text-muted text-center" style={{ color: "var(--muted)" }}>
             No blast windows scheduled.
           </p>
         )}

@@ -29,18 +29,27 @@ type AlertRow = {
   created_at: string;
 };
 
+const SEVERITY_COLOR: Record<string, string> = {
+  info: "var(--unknown)",
+  warning: "var(--warning)",
+  high: "var(--stale)",
+  critical: "var(--offline)",
+};
+
 export default function DashboardPage() {
   const nodesQuery = useQuery({
     queryKey: ["nodes"],
     queryFn: () => apiGet<NodeRow[]>("/api/nodes"),
   });
   const alertsQuery = useQuery({
-    queryKey: ["alerts", "active"],
-    queryFn: () => apiGet<AlertRow[]>("/api/alerts?state=new"),
+    queryKey: ["alerts", "all"],
+    queryFn: () => apiGet<AlertRow[]>("/api/alerts"),
   });
 
   const nodes = nodesQuery.data?.data ?? [];
-  const alerts = alertsQuery.data?.data ?? [];
+  const alerts = (alertsQuery.data?.data ?? []).filter(
+    (a) => a.state === "new" || a.state === "notified",
+  );
   const mapNodes: MapNode[] = nodes.map((n) => ({
     node_id: n.node_id,
     label: n.label,
@@ -51,31 +60,43 @@ export default function DashboardPage() {
   }));
 
   const healthy = nodes.filter((n) => n.health_state === "normal").length;
+  const maxRisk = nodes.length > 0 ? Math.max(...nodes.map((n) => n.latest_risk_score ?? 0)) : null;
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div>
+        <h1 className="text-lg font-semibold">Command Center</h1>
+        <p className="text-sm text-muted mt-0.5" style={{ color: "var(--muted)" }}>
+          Live sensor and alert status for SIH-DEMO-01
+        </p>
+      </div>
+
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatTile label="Nodes" value={nodes.length} />
-        <StatTile label="Healthy" value={`${healthy}/${nodes.length}`} />
-        <StatTile label="Active alerts" value={alerts.length} />
+        <StatTile
+          label="Healthy"
+          value={`${healthy}/${nodes.length}`}
+          tone={nodes.length > 0 && healthy < nodes.length ? "warning" : undefined}
+        />
+        <StatTile
+          label="Active alerts"
+          value={alerts.length}
+          tone={alerts.length > 0 ? "danger" : undefined}
+        />
         <StatTile
           label="Fuzzy Risk Index"
-          value={
-            nodes.length > 0
-              ? Math.max(...nodes.map((n) => n.latest_risk_score ?? 0)).toFixed(2)
-              : "—"
-          }
+          value={maxRisk != null ? maxRisk.toFixed(2) : "—"}
           caption={<FuzzyIndexLabel />}
         />
       </section>
 
-      <section className="panel p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold">Node map</h2>
+      <section className="panel p-4 md:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">Node map</h2>
           <MockPositionLabel />
         </div>
         {nodesQuery.isLoading ? (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
+          <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
             Loading nodes…
           </p>
         ) : (
@@ -83,49 +104,72 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="panel p-4">
-          <h2 className="font-semibold mb-3">Nodes</h2>
-          <ul className="flex flex-col gap-2">
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="panel overflow-hidden">
+          <div className="px-4 md:px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)" }}>
+            <h2 className="text-sm font-semibold">Nodes</h2>
+            <Link href="/nodes" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
+              View all →
+            </Link>
+          </div>
+          <div>
             {nodes.map((n) => (
-              <li key={n.node_id}>
-                <Link
-                  href={`/nodes/${n.node_id}`}
-                  className="flex items-center justify-between panel-2 px-3 py-2 rounded-md hover:opacity-90"
-                >
-                  <span>{n.label}</span>
-                  <HealthBadge state={n.health_state} />
-                </Link>
-              </li>
+              <Link
+                key={n.node_id}
+                href={`/nodes/${n.node_id}`}
+                className="panel-row flex items-center justify-between px-4 md:px-5 py-3 border-b last:border-b-0"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{n.label}</span>
+                  <span className="text-xs text-faint" style={{ color: "var(--faint)" }}>
+                    risk {n.latest_risk_score?.toFixed(2) ?? "—"}
+                  </span>
+                </div>
+                <HealthBadge state={n.health_state} />
+              </Link>
             ))}
             {nodes.length === 0 && !nodesQuery.isLoading && (
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
+              <p className="px-4 md:px-5 py-6 text-sm text-muted" style={{ color: "var(--muted)" }}>
                 No nodes seeded yet.
               </p>
             )}
-          </ul>
+          </div>
         </div>
 
-        <div className="panel p-4">
-          <h2 className="font-semibold mb-3">Active alerts</h2>
+        <div className="panel overflow-hidden">
+          <div className="px-4 md:px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)" }}>
+            <h2 className="text-sm font-semibold">Active alerts</h2>
+            <Link href="/alerts" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
+              View all →
+            </Link>
+          </div>
           {alerts.length === 0 ? (
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
-              No active alerts. (Alert engine is not built yet in this pass — this is a
-              genuinely empty state, not a placeholder.)
+            <p className="px-4 md:px-5 py-6 text-sm text-muted" style={{ color: "var(--muted)" }}>
+              No active alerts.
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <div>
               {alerts.map((a) => (
-                <li key={a.id}>
-                  <Link href={`/alerts/${a.id}`} className="block panel-2 px-3 py-2 rounded-md">
-                    <div className="text-sm font-medium">{a.summary}</div>
-                    <div className="text-xs" style={{ color: "var(--muted)" }}>
+                <Link
+                  key={a.id}
+                  href={`/alerts/${a.id}`}
+                  className="panel-row flex items-start gap-3 px-4 md:px-5 py-3 border-b last:border-b-0"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <span
+                    className="status-dot mt-1.5"
+                    style={{ color: SEVERITY_COLOR[a.severity], background: SEVERITY_COLOR[a.severity] }}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{a.summary}</div>
+                    <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
                       {a.severity} · {a.state}
                     </div>
-                  </Link>
-                </li>
+                  </div>
+                </Link>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </section>
@@ -137,18 +181,23 @@ function StatTile({
   label,
   value,
   caption,
+  tone,
 }: {
   label: string;
   value: string | number;
   caption?: React.ReactNode;
+  tone?: "warning" | "danger";
 }) {
+  const valueColor = tone === "danger" ? "var(--offline)" : tone === "warning" ? "var(--warning)" : "var(--foreground)";
   return (
     <div className="panel p-4">
-      <div className="text-xs uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+      <div className="text-xs uppercase tracking-wide text-faint" style={{ color: "var(--faint)" }}>
         {label}
       </div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
-      {caption && <div className="mt-1">{caption}</div>}
+      <div className="text-2xl font-semibold mt-1.5" style={{ color: valueColor }}>
+        {value}
+      </div>
+      {caption && <div className="mt-1.5">{caption}</div>}
     </div>
   );
 }

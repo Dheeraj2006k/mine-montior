@@ -6,7 +6,11 @@ import { apiGet } from "@/lib/api/client";
 type Dependency = { name: string; status: "ok" | "degraded" | "down"; detail: string };
 type NodeStatus = { label: string; state: string; last_seen_at: string | null };
 
-const STATUS_ICON: Record<Dependency["status"], string> = { ok: "🟢", degraded: "🟡", down: "🔴" };
+const STATUS_COLOR: Record<Dependency["status"], string> = {
+  ok: "var(--normal)",
+  degraded: "var(--warning)",
+  down: "var(--offline)",
+};
 
 export default function SystemHealthPage() {
   const query = useQuery({
@@ -18,28 +22,39 @@ export default function SystemHealthPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">System health</h1>
-      <p className="text-sm" style={{ color: "var(--muted)" }}>
-        Per PRD §11.6 — the scheduled ML pass row exists specifically because a silently-dead
-        background job is otherwise invisible. This page is the thing meant to notice.
-      </p>
+      <div>
+        <h1 className="text-lg font-semibold">System health</h1>
+        <p className="text-sm text-muted mt-1" style={{ color: "var(--muted)" }}>
+          The scheduled ML pass row exists specifically because a silently-dead background job
+          is otherwise invisible — this page is what&apos;s meant to notice.
+        </p>
+      </div>
 
-      <section className="panel divide-y" style={{ borderColor: "var(--border)" }}>
+      <section className="panel overflow-hidden">
         {dependencies.map((d) => (
-          <div key={d.name} className="px-4 py-3 flex items-center justify-between">
-            <span className="font-medium">{d.name.replace(/_/g, " ")}</span>
-            <span className="text-sm" style={{ color: "var(--muted)" }}>
-              {STATUS_ICON[d.status]} {d.detail}
+          <div
+            key={d.name}
+            className="panel-row flex items-center justify-between px-4 md:px-5 py-3 border-b last:border-b-0"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <span className="text-sm font-medium capitalize">{d.name.replace(/_/g, " ")}</span>
+            <span className="flex items-center gap-2 text-sm text-muted" style={{ color: "var(--muted)" }}>
+              <span className="status-dot" style={{ color: STATUS_COLOR[d.status], background: STATUS_COLOR[d.status] }} />
+              {d.detail}
             </span>
           </div>
         ))}
       </section>
 
-      <section className="panel divide-y" style={{ borderColor: "var(--border)" }}>
+      <section className="panel overflow-hidden">
         {nodes.map((n) => (
-          <div key={n.label} className="px-4 py-3 flex items-center justify-between">
-            <span className="font-medium">{n.label}</span>
-            <span className="text-sm" style={{ color: "var(--muted)" }}>
+          <div
+            key={n.label}
+            className="panel-row flex items-center justify-between px-4 md:px-5 py-3 border-b last:border-b-0"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <span className="text-sm font-medium">{n.label}</span>
+            <span className="text-sm text-muted" style={{ color: "var(--muted)" }}>
               {n.state} · last packet {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "never"}
             </span>
           </div>
