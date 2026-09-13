@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { IrisLogo } from "@/components/layout/iris-logo";
 import {
   DashboardIcon,
@@ -15,7 +17,7 @@ import {
 } from "@/components/layout/nav-icons";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: DashboardIcon },
+  { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
   { href: "/nodes", label: "Nodes", icon: NodesIcon },
   { href: "/alerts", label: "Alerts", icon: AlertIcon },
   { href: "/twin", label: "Digital Twin", icon: TwinIcon },
@@ -55,6 +57,46 @@ function NavLink({
   );
 }
 
+function AccountFooter() {
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
+  return (
+    <div className="px-2">
+      <div
+        className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
+        style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+      >
+        <span className="text-xs truncate" style={{ color: "var(--muted)" }} title={email ?? undefined}>
+          {email ?? "…"}
+        </span>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="text-xs shrink-0 font-medium hover:underline disabled:opacity-50"
+          style={{ color: "var(--faint)" }}
+        >
+          {signingOut ? "…" : "Sign out"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -64,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="hidden md:flex flex-col w-60 shrink-0 border-r px-3 py-4 gap-6"
         style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}
       >
-        <Link href="/" className="flex items-center gap-2 px-2">
+        <Link href="/dashboard" className="flex items-center gap-2 px-2">
           <IrisLogo size={26} />
           <div className="leading-tight">
             <div className="font-semibold text-sm tracking-tight">IRIS</div>
@@ -92,6 +134,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
 
+        <div className="mt-auto">
+          <AccountFooter />
+        </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -99,9 +144,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="md:hidden border-b px-4 py-3 flex flex-col gap-3"
           style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}
         >
-          <div className="flex items-center gap-2">
-            <IrisLogo size={22} />
-            <span className="font-semibold text-sm">IRIS</span>
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <IrisLogo size={22} />
+              <span className="font-semibold text-sm">IRIS</span>
+            </Link>
           </div>
           <nav className="flex gap-1 overflow-x-auto -mx-1 px-1">
             {[...NAV, ...ADMIN_NAV].map((item) => (
