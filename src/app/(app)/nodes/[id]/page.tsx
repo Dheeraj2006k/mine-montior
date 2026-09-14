@@ -50,7 +50,7 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
   }));
 
   if (nodeQuery.isLoading) {
-    return <p style={{ color: "var(--muted)" }}>Loading…</p>;
+    return <p style={{ color: "var(--muted)" }}>Loading...</p>;
   }
   if (!node) {
     return <p style={{ color: "var(--muted)" }}>Node not found.</p>;
@@ -86,11 +86,11 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
         </div>
         <Stat
           label="Packet loss"
-          value={node.packet_loss_pct != null ? `${node.packet_loss_pct}%` : "—"}
+          value={node.packet_loss_pct != null ? `${node.packet_loss_pct}%` : "-"}
         />
         <Stat
           label="Last seen"
-          value={node.last_seen_at ? new Date(node.last_seen_at).toLocaleTimeString() : "—"}
+          value={node.last_seen_at ? new Date(node.last_seen_at).toLocaleTimeString() : "-"}
         />
         <Stat label="Site" value={node.site_id} />
       </section>

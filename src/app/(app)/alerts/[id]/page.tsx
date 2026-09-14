@@ -59,7 +59,7 @@ export default function AlertDetailPage({ params }: { params: Promise<{ id: stri
     },
   });
 
-  if (query.isLoading) return <p className="text-muted" style={{ color: "var(--muted)" }}>Loading…</p>;
+  if (query.isLoading) return <p className="text-muted" style={{ color: "var(--muted)" }}>Loading...</p>;
   if (!alert) return <p className="text-muted" style={{ color: "var(--muted)" }}>Alert not found.</p>;
 
   return (
@@ -78,8 +78,8 @@ export default function AlertDetailPage({ params }: { params: Promise<{ id: stri
             <h1 className="text-lg font-semibold">{alert.summary}</h1>
           </div>
           <p className="text-sm text-muted mt-1" style={{ color: "var(--muted)" }}>
-            {alert.severity} · {alert.state} · {alert.reason}
-            {alert.blast_suspected && " · overlaps scheduled blast — human verification recommended"}
+            {alert.severity} - {alert.state} - {alert.reason}
+            {alert.blast_suspected && " - overlaps scheduled blast - human verification recommended"}
           </p>
         </div>
         {alert.state === "new" || alert.state === "notified" ? (
@@ -170,18 +170,18 @@ function SimulateIvr({ alertId, onDone }: { alertId: string; onDone: () => void 
     <section className="panel p-4 md:p-5">
       <h2 className="text-sm font-semibold mb-1">Simulate IVR response</h2>
       <p className="text-xs text-muted mb-3" style={{ color: "var(--muted)" }}>
-        No real phone call happens — this drives the exact same DTMF-handling code path a real
+        No real phone call happens - this drives the exact same DTMF-handling code path a real
         Twilio call would. Disabled automatically once real voice credentials are configured.
       </p>
       <div className="flex flex-wrap gap-2">
         <button className="btn" onClick={() => mutation.mutate("1")} disabled={mutation.isPending}>
-          Press 1 — real event
+          Press 1 - real event
         </button>
         <button className="btn" onClick={() => mutation.mutate("2")} disabled={mutation.isPending}>
-          Press 2 — blast/disturbance
+          Press 2 - blast/disturbance
         </button>
         <button className="btn" onClick={() => mutation.mutate("3")} disabled={mutation.isPending}>
-          Press 3 — uncertain
+          Press 3 - uncertain
         </button>
       </div>
       {mutation.isError && (

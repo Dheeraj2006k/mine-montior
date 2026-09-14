@@ -11,7 +11,7 @@ export async function DELETE(
     return fail("INVALID_ID", "contact id must be an integer", [], 400);
   }
 
-  // Soft delete only, per plan §6.4 — a contact might be referenced by
+  // Soft delete only, per plan §6.4 - a contact might be referenced by
   // historical notifications/call_sessions/audit rows.
   const { data, error } = await supabaseAdmin
     .from("contacts")

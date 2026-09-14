@@ -36,7 +36,7 @@ function LoginForm() {
   return (
     <AuthCard
       title="Sign in"
-      subtitle="IRIS — Intelligent RealTime Instability Sensing"
+      subtitle="Intelligent Real-time Instability Sensing"
       footer={
         <>
           Don&apos;t have an account?{" "}
@@ -72,7 +72,7 @@ function LoginForm() {
             className="input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder="Enter your password"
           />
         </label>
 
@@ -83,7 +83,7 @@ function LoginForm() {
         )}
 
         <button type="submit" className="btn btn-primary mt-1" disabled={loading}>
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
     </AuthCard>

@@ -133,21 +133,21 @@ export function LiveSensorFeed({ nodes }: { nodes: NodeSummary[] }) {
                 <div className="grid grid-cols-4 gap-3">
                   <Metric
                     label="Tilt X"
-                    value={latest?.tilt_x_filt != null ? latest.tilt_x_filt.toFixed(2) : "—"}
+                    value={latest?.tilt_x_filt != null ? latest.tilt_x_filt.toFixed(2) : "-"}
                     unit="°"
                   />
                   <Metric
                     label="Tilt Y"
-                    value={latest?.tilt_y_filt != null ? latest.tilt_y_filt.toFixed(2) : "—"}
+                    value={latest?.tilt_y_filt != null ? latest.tilt_y_filt.toFixed(2) : "-"}
                     unit="°"
                   />
                   <Metric
                     label="Vibration"
-                    value={latest?.vibration_filt != null ? latest.vibration_filt.toFixed(2) : "—"}
+                    value={latest?.vibration_filt != null ? latest.vibration_filt.toFixed(2) : "-"}
                   />
                   <Metric
                     label="Displacement"
-                    value={latest?.displacement_filt != null ? latest.displacement_filt.toFixed(2) : "—"}
+                    value={latest?.displacement_filt != null ? latest.displacement_filt.toFixed(2) : "-"}
                     unit="mm"
                   />
                 </div>

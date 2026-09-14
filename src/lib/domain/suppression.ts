@@ -1,6 +1,6 @@
 // PRD §12 / plan §8.4: suppression is a query-time filter in the notification
 // engine ONLY. It must never be consulted by ingest, the alert engine, or
-// anything that decides whether to persist/analyse data — structural
+// anything that decides whether to persist/analyse data - structural
 // separation, not a code comment, is what keeps this honest.
 //
 // There is no dedicated suppression table in the 14-table schema, so state is

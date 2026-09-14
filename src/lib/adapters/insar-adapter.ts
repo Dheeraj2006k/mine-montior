@@ -21,7 +21,7 @@ export type InsarNodeFeature = {
 
 /**
  * No raster/GeoTIFF pipeline exists yet (InSAR team owns that per plan §16),
- * so "live" here means "a row exists in insar_node_features" — the only
+ * so "live" here means "a row exists in insar_node_features" - the only
  * thing that will change once the real Sentinel-1/HyP3 pipeline ships is
  * who populates that table, not this adapter's shape.
  */

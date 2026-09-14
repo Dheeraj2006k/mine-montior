@@ -1,6 +1,6 @@
 // Equirectangular local-metre projection, plan §10.4. Kept as one shared
 // utility so the 2D map and the 3D twin can never disagree about where a
-// node is — though the 2D map currently renders real lat/lon directly via
+// node is - though the 2D map currently renders real lat/lon directly via
 // MapLibre, this is what the twin uses to place node pins on a flat scene.
 export type LatLon = { lat: number; lon: number };
 export type LocalXY = { x: number; y: number };

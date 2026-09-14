@@ -1,7 +1,7 @@
 export type AlertSeverity = "info" | "warning" | "high" | "critical";
 export type AlertState = "new" | "notified" | "acknowledged" | "resolved" | "dismissed";
 
-// Plan §7.1 — config, not constants, in spirit: this is the one place the
+// Plan §7.1 - config, not constants, in spirit: this is the one place the
 // evidence_score -> severity mapping lives, so it can be swapped out without
 // touching call sites.
 export const SEVERITY_BANDS: { max: number; severity: AlertSeverity }[] = [
@@ -45,7 +45,7 @@ export type DedupDecision =
 /**
  * PRD §7.2 dedup rule, and its critical exception: a dedup rule must never
  * mask an escalation. If severity has moved to a strictly higher band since
- * the open alert was created, this is a genuinely new situation — create a
+ * the open alert was created, this is a genuinely new situation - create a
  * new alert rather than silently folding it into the old one.
  */
 export function decideDedup(
@@ -82,7 +82,7 @@ const BLAST_MARGIN_MS = 5 * 60 * 1000;
 /**
  * PRD §7.3: overlap only ever affects notification urgency, never the
  * severity shown on the dashboard. This function only answers "does an
- * overlap exist" — callers must not use it to change severity.
+ * overlap exist" - callers must not use it to change severity.
  */
 export function overlapsBlastWindow(occurredAtIso: string, windows: BlastWindow[]): boolean {
   const occurredAt = new Date(occurredAtIso).getTime();

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 
-// Canonical stage vocabulary, plan §5.9 — frozen here so every producer
+// Canonical stage vocabulary, plan §5.9 - frozen here so every producer
 // (ingest, alert engine, future notification/IVR code) shares one enum.
 export type PipelineStage =
   | "SENSOR"

@@ -9,10 +9,10 @@ import { MockPositionLabel } from "@/components/labels";
 import type { HealthState } from "@/lib/domain/node-health";
 import type { PredictedZoneEntry, TwinNode } from "@/components/twin/twin-scene";
 
-// three.js/canvas needs the browser — no SSR for this component.
+// three.js/canvas needs the browser - no SSR for this component.
 const TwinScene = dynamic(() => import("@/components/twin/twin-scene").then((m) => m.TwinScene), {
   ssr: false,
-  loading: () => <p style={{ color: "var(--muted)" }}>Loading 3D scene…</p>,
+  loading: () => <p style={{ color: "var(--muted)" }}>Loading 3D scene...</p>,
 });
 
 type NodeRow = {
@@ -90,15 +90,15 @@ export default function TwinPage() {
       </div>
 
       <div className="label-caveat">
-        Predicted deformation (model output — not observed). model_version:{" "}
-        {prediction?.model_version ?? "—"} · confidence:{" "}
-        {prediction?.time_to_threshold.confidence ?? "—"}
-        {prediction?.is_stale && " · STALE"}
+        Predicted deformation (model output - not observed). model_version:{" "}
+        {prediction?.model_version ?? "-"} - confidence:{" "}
+        {prediction?.time_to_threshold.confidence ?? "-"}
+        {prediction?.is_stale && " - STALE"}
       </div>
 
       {!hasPrediction && (
         <p className="text-xs text-faint" style={{ color: "var(--faint)" }}>
-          No prediction data available yet (ML service not connected in this build) — the terrain
+          No prediction data available yet (ML service not connected in this build) - the terrain
           below is intentionally flat. Flat is not a claim of zero risk; it means no prediction
           exists to render.
         </p>
@@ -107,7 +107,7 @@ export default function TwinPage() {
       <div className="panel overflow-hidden" style={{ height: 480 }}>
         {nodesQuery.isLoading ? (
           <p className="p-4 text-muted" style={{ color: "var(--muted)" }}>
-            Loading nodes…
+            Loading nodes...
           </p>
         ) : (
           <TwinScene nodes={nodes} predictedZone={predictedZone} scrubT={scrubT} />

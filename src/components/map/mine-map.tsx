@@ -29,7 +29,7 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
       type: "raster",
       tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
+      attribution: "(c) OpenStreetMap contributors",
     },
   },
   layers: [{ id: "osm", type: "raster", source: "osm" }],
@@ -81,11 +81,11 @@ export function MineMap({ nodes }: { nodes: MapNode[] }) {
       el.style.background = RISK_COLORS[node.health_state];
       el.style.border = "2px solid white";
       el.style.boxShadow = "0 0 4px rgba(0,0,0,0.5)";
-      el.title = `${node.label} — ${node.health_state} — mock position`;
+      el.title = `${node.label} - ${node.health_state} - mock position`;
 
       const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
         `<strong>${node.label}</strong><br/>mock position (not GNSS)<br/>health: ${node.health_state}<br/>risk: ${
-          node.latest_risk_score ?? "—"
+          node.latest_risk_score ?? "-"
         }`,
       );
 

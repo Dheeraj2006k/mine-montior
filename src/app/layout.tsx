@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { OpeningLoader } from "@/components/layout/opening-loader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IRIS — Intelligent RealTime Instability Sensing",
-  description: "AI-enabled real-time mine subsidence monitoring platform",
+  title: "IRIS - Intelligent Real-time Instability Sensing",
+  description: "Safer mines. Stable tomorrow.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <OpeningLoader />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

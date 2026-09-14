@@ -61,7 +61,7 @@ export default function BlastsAdminPage() {
       <div>
         <h1 className="text-lg font-semibold">Blast schedule</h1>
         <p className="text-sm text-muted mt-1" style={{ color: "var(--muted)" }}>
-          Overlapping a scheduled blast never lowers the severity shown on the dashboard — it
+          Overlapping a scheduled blast never lowers the severity shown on the dashboard - it
           only downgrades notification urgency (PRD §7.3).
         </p>
       </div>
@@ -106,7 +106,7 @@ export default function BlastsAdminPage() {
           />
         </label>
         <button type="submit" className="btn btn-primary sm:col-span-2" disabled={createMutation.isPending}>
-          {createMutation.isPending ? "Adding…" : "Add blast window"}
+          {createMutation.isPending ? "Adding..." : "Add blast window"}
         </button>
         {createMutation.isError && (
           <p className="text-sm sm:col-span-2" style={{ color: "var(--offline)" }}>
@@ -125,7 +125,7 @@ export default function BlastsAdminPage() {
             <div>
               <div className="text-sm font-medium">{b.panel_label ?? "(unlabelled panel)"}</div>
               <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
-                {new Date(b.planned_start).toLocaleString()} → {new Date(b.planned_end).toLocaleString()}
+                {new Date(b.planned_start).toLocaleString()} {"->"} {new Date(b.planned_end).toLocaleString()}
               </div>
               {b.note && <div className="text-xs mt-1 text-faint" style={{ color: "var(--faint)" }}>{b.note}</div>}
             </div>

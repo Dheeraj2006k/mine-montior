@@ -39,7 +39,7 @@ export async function POST(
   }
 
   await supabaseAdmin.from("audit_log").insert({
-    actor: "operator:dashboard", // no auth in this pass — see plan §13.2 for role-scoped actor once auth ships
+    actor: "operator:dashboard", // no auth in this pass - see plan §13.2 for role-scoped actor once auth ships
     action: "acknowledge",
     entity_table: "alerts",
     entity_id: String(alertId),

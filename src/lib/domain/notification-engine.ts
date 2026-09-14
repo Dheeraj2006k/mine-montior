@@ -10,7 +10,7 @@ import { computeSuppression, type FeedbackForSuppression } from "@/lib/domain/su
 // that's handling the HTTP request. That is correct and demonstrable for a
 // local `next dev` / `next start` process kept alive for a demo, but it does
 // NOT survive a serverless redeploy or process restart, and won't work at
-// all on Vercel's serverless function model in production — a real
+// all on Vercel's serverless function model in production - a real
 // deployment needs a durable scheduler (Vercel Cron + a queue table, or
 // QStash) driving these steps instead. Flagged here so it isn't mistaken for
 // production-grade infrastructure.
@@ -86,7 +86,7 @@ export async function dispatchNotifications(alertId: number, traceId: string): P
 
   const suppression = computeSuppression(alert.node_id, alert.severity, feedbackForSuppression);
 
-  // Dashboard notification always happens — suppression only affects
+  // Dashboard notification always happens - suppression only affects
   // human-interrupting channels (email/SMS/voice), never visibility.
   await recordPipelineTrace({
     trace_id: traceId,
@@ -128,7 +128,7 @@ export async function dispatchNotifications(alertId: number, traceId: string): P
     if (!contact.email || !contact.channels.includes("email")) continue;
     const result = await sendEmail({
       to: contact.email,
-      subject: `[${alert.severity.toUpperCase()}] ${node?.label ?? "Node"} — Mine Subsidence Monitor`,
+      subject: `[${alert.severity.toUpperCase()}] ${node?.label ?? "Node"} - Mine Subsidence Monitor`,
       text: alert.summary,
     });
     await supabaseAdmin.from("notifications").insert({
@@ -237,11 +237,11 @@ const DIGIT_TO_VERDICT: Record<string, DtmfVerdict> = {
 
 /**
  * Shared by the real Twilio DTMF webhook and the DEMO_MODE "simulate IVR
- * response" dashboard button — same code path, same DB writes, the only
+ * response" dashboard button - same code path, same DB writes, the only
  * difference is whether a real call ever happened (plan §8.6).
  *
  * Digit 3 ("uncertain") deliberately does NOT halt the escalation ladder
- * (plan §8.2: "Press 3 ... escalation ladder continues") — it records
+ * (plan §8.2: "Press 3 ... escalation ladder continues") - it records
  * acknowledged_at/channel for the audit trail but leaves alert.state at
  * "notified" so scheduleStep's alertIsOpen() gate keeps firing later steps.
  * Digits 1 and 2 move state to "acknowledged", which halts the ladder.

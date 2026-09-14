@@ -9,7 +9,7 @@ const STYLES: Record<HealthState, { label: string; className: string; icon: stri
 };
 
 // PRD §14.1: unknown/stale/offline must never render as green/normal.
-// Colour + icon + text together — never colour alone (§9.5, colour-blind safety).
+// Colour + icon + text together - never colour alone (§9.5, colour-blind safety).
 export function HealthBadge({ state }: { state: HealthState }) {
   const style = STYLES[state];
   return (

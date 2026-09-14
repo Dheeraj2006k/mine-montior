@@ -26,7 +26,7 @@ export default function SystemHealthPage() {
         <h1 className="text-lg font-semibold">System health</h1>
         <p className="text-sm text-muted mt-1" style={{ color: "var(--muted)" }}>
           The scheduled ML pass row exists specifically because a silently-dead background job
-          is otherwise invisible — this page is what&apos;s meant to notice.
+          is otherwise invisible - this page is what&apos;s meant to notice.
         </p>
       </div>
 
@@ -55,7 +55,7 @@ export default function SystemHealthPage() {
           >
             <span className="text-sm font-medium">{n.label}</span>
             <span className="text-sm text-muted" style={{ color: "var(--muted)" }}>
-              {n.state} · last packet {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "never"}
+              {n.state} - last packet {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "never"}
             </span>
           </div>
         ))}

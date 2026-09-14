@@ -11,9 +11,9 @@ export function isVoiceDemoMode(): boolean {
 }
 
 // Severity-aware script template, plan §8.2. Deliberately deterministic
-// string interpolation from stored values — no LLM in the voice control
+// string interpolation from stored values - no LLM in the voice control
 // path (plan §8.3: "the AI is in script generation [elsewhere], not the
-// control flow" — this path has none at all, by design, for reliability).
+// control flow" - this path has none at all, by design, for reliability).
 export function buildCallScript(params: {
   severity: string;
   nodeLabel: string;

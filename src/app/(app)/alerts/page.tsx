@@ -55,7 +55,7 @@ export default function AlertsPage() {
                 </span>
               </div>
               <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
-                {a.severity} · {a.state} · {a.reason}
+                {a.severity} - {a.state} - {a.reason}
               </div>
             </div>
           </Link>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { IrisLogo } from "@/components/layout/iris-logo";
+import { IrisIconMark, IrisWordmark } from "@/components/layout/iris-logo";
 import {
   DashboardIcon,
   NodesIcon,
@@ -57,6 +57,15 @@ function NavLink({
   );
 }
 
+function BrandLockup({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className="flex flex-col gap-0.5 min-w-0">
+      <IrisWordmark width={compact ? 88 : 100} priority className="iris-brand-wordmark" />
+      <span className="iris-brand-subtitle">Intelligent Real-time Instability Sensing</span>
+    </span>
+  );
+}
+
 function AccountFooter() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
@@ -82,7 +91,7 @@ function AccountFooter() {
         style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
       >
         <span className="text-xs truncate" style={{ color: "var(--muted)" }} title={email ?? undefined}>
-          {email ?? "…"}
+          {email ?? "..."}
         </span>
         <button
           onClick={handleSignOut}
@@ -90,7 +99,7 @@ function AccountFooter() {
           className="text-xs shrink-0 font-medium hover:underline disabled:opacity-50"
           style={{ color: "var(--faint)" }}
         >
-          {signingOut ? "…" : "Sign out"}
+          {signingOut ? "..." : "Sign out"}
         </button>
       </div>
     </div>
@@ -106,14 +115,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="hidden md:flex flex-col w-60 shrink-0 border-r px-3 py-4 gap-6"
         style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}
       >
-        <Link href="/dashboard" className="flex items-center gap-2 px-2">
-          <IrisLogo size={26} />
-          <div className="leading-tight">
-            <div className="font-semibold text-sm tracking-tight">IRIS</div>
-            <div className="text-[10px] text-muted" style={{ color: "var(--faint)" }}>
-              Instability Sensing
-            </div>
-          </div>
+        <Link href="/dashboard" className="flex items-center gap-2.5 px-2">
+          <IrisIconMark size={30} priority className="iris-brand-eye" />
+          <BrandLockup />
         </Link>
 
         <nav className="flex flex-col gap-0.5">
@@ -146,8 +150,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <IrisLogo size={22} />
-              <span className="font-semibold text-sm">IRIS</span>
+              <IrisIconMark size={26} priority className="iris-brand-eye" />
+              <BrandLockup compact />
             </Link>
           </div>
           <nav className="flex gap-1 overflow-x-auto -mx-1 px-1">

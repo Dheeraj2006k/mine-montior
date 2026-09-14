@@ -3,7 +3,7 @@ import { verifyTwilioSignature } from "@/lib/adapters/voice-adapter";
 import { handleDtmfResponse } from "@/lib/domain/notification-engine";
 
 // PRD §13.4: an unauthenticated DTMF webhook means anyone on the internet
-// can mark alerts "blast — ignore." Signature verification is mandatory
+// can mark alerts "blast - ignore." Signature verification is mandatory
 // outside DEMO_MODE (verifyTwilioSignature auto-passes only in demo mode).
 export async function POST(
   request: Request,

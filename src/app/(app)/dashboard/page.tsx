@@ -50,9 +50,9 @@ const SEVERITY_COLOR: Record<string, string> = {
 };
 
 const TREND_STYLE: Record<string, { arrow: string; color: string }> = {
-  accelerating: { arrow: "↑", color: "var(--offline)" },
-  stable: { arrow: "→", color: "var(--muted)" },
-  decelerating: { arrow: "↓", color: "var(--normal)" },
+  accelerating: { arrow: "up", color: "var(--offline)" },
+  stable: { arrow: "->", color: "var(--muted)" },
+  decelerating: { arrow: "down", color: "var(--normal)" },
 };
 
 export default function DashboardPage() {
@@ -118,7 +118,7 @@ export default function DashboardPage() {
             Peak risk
           </div>
           <div className="mt-1.5">
-            {maxRisk != null ? <RiskBadge score={maxRisk} size="lg" /> : <span className="text-2xl font-semibold">—</span>}
+            {maxRisk != null ? <RiskBadge score={maxRisk} size="lg" /> : <span className="text-2xl font-semibold">-</span>}
           </div>
           <div className="mt-1.5">
             <FuzzyIndexLabel />
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         </div>
         {nodesQuery.isLoading ? (
           <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
-            Loading nodes…
+            Loading nodes...
           </p>
         ) : (
           <MineMap nodes={mapNodes} />
@@ -172,14 +172,14 @@ export default function DashboardPage() {
               </span>
             )}
             <Link href="/twin" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
-              View in 3D twin →
+              View in 3D twin {"->"}
             </Link>
           </div>
         </div>
 
         {!prediction || zoneEntries.length === 0 ? (
           <p className="text-sm text-muted" style={{ color: "var(--muted)" }}>
-            No prediction available yet — the ML service hasn&apos;t written a result. This is an
+            No prediction available yet - the ML service hasn&apos;t written a result. This is an
             honest empty state, not a placeholder.
           </p>
         ) : (
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                   className="text-lg font-semibold mt-0.5 flex items-center gap-1.5"
                   style={{ color: TREND_STYLE[prediction.trend]?.color ?? "var(--foreground)" }}
                 >
-                  <span>{TREND_STYLE[prediction.trend]?.arrow ?? "•"}</span>
+                  <span>{TREND_STYLE[prediction.trend]?.arrow ?? "-"}</span>
                   <span className="capitalize">{prediction.trend}</span>
                 </div>
               </div>
@@ -203,8 +203,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-lg font-semibold mt-0.5">
                   {prediction.time_to_threshold.low_days != null && prediction.time_to_threshold.high_days != null
-                    ? `${prediction.time_to_threshold.low_days}–${prediction.time_to_threshold.high_days}d`
-                    : "—"}
+                    ? `${prediction.time_to_threshold.low_days}-${prediction.time_to_threshold.high_days}d`
+                    : "-"}
                 </div>
               </div>
               <div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                 <div className="text-lg font-semibold mt-0.5">
                   {prediction.time_to_threshold.confidence != null
                     ? `${Math.round(prediction.time_to_threshold.confidence * 100)}%`
-                    : "—"}
+                    : "-"}
                 </div>
               </div>
               <div>
@@ -258,7 +258,7 @@ export default function DashboardPage() {
             </div>
 
             <p className="label-caveat self-start">
-              Model output — not observed. Never render as a single date, always a range.
+              Model output - not observed. Never render as a single date, always a range.
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ export default function DashboardPage() {
           <div className="px-4 md:px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)" }}>
             <h2 className="text-sm font-semibold">Nodes</h2>
             <Link href="/nodes" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
-              View all →
+              View all {"->"}
             </Link>
           </div>
           <div>
@@ -299,7 +299,7 @@ export default function DashboardPage() {
           <div className="px-4 md:px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)" }}>
             <h2 className="text-sm font-semibold">Active alerts</h2>
             <Link href="/alerts" className="text-xs text-muted hover:text-foreground" style={{ color: "var(--muted)" }}>
-              View all →
+              View all {"->"}
             </Link>
           </div>
           {alerts.length === 0 ? (
@@ -322,7 +322,7 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{a.summary}</div>
                     <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
-                      {a.severity} · {a.state}
+                      {a.severity} - {a.state}
                     </div>
                   </div>
                 </Link>

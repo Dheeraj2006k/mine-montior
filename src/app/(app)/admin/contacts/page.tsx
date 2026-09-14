@@ -70,7 +70,7 @@ export default function ContactsAdminPage() {
           className="inline-flex items-center gap-1.5 mt-2 text-xs rounded-full px-2.5 py-1"
           style={{ color: "var(--offline)", background: "color-mix(in srgb, var(--offline) 12%, transparent)" }}
         >
-          Unrestricted access — no auth gating yet. Holds PII; close this before real deployment.
+          Unrestricted access - no auth gating yet. Holds PII; close this before real deployment.
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function ContactsAdminPage() {
           />
         </label>
         <button type="submit" className="btn btn-primary sm:col-span-2" disabled={createMutation.isPending}>
-          {createMutation.isPending ? "Adding…" : "Add contact"}
+          {createMutation.isPending ? "Adding..." : "Add contact"}
         </button>
       </form>
 
@@ -134,13 +134,13 @@ export default function ContactsAdminPage() {
               <div className="text-sm font-medium">
                 {c.full_name}{" "}
                 <span className="text-muted font-normal" style={{ color: "var(--muted)" }}>
-                  — {c.role}
+                  - {c.role}
                 </span>
               </div>
               <div className="text-xs text-muted mt-0.5" style={{ color: "var(--muted)" }}>
-                priority {c.escalation_priority} · {c.channels.join(", ")}
-                {c.phone_e164 && ` · ${c.phone_e164}`}
-                {c.email && ` · ${c.email}`}
+                priority {c.escalation_priority} - {c.channels.join(", ")}
+                {c.phone_e164 && ` - ${c.phone_e164}`}
+                {c.email && ` - ${c.email}`}
               </div>
             </div>
             <button onClick={() => deactivateMutation.mutate(c.id)} className="btn btn-ghost btn-danger text-xs">

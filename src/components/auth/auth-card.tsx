@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IrisLogo } from "@/components/layout/iris-logo";
+import { IrisIconMark, IrisWordmark } from "@/components/layout/iris-logo";
 
 export function AuthCard({
   title,
@@ -18,9 +18,9 @@ export function AuthCard({
       style={{ background: "var(--bg)" }}
     >
       <div className="w-full max-w-sm flex flex-col gap-6">
-        <Link href="/" className="flex items-center justify-center gap-2">
-          <IrisLogo size={30} />
-          <span className="font-semibold tracking-tight">IRIS</span>
+        <Link href="/" className="flex items-center justify-center gap-2.5">
+          <IrisIconMark size={34} priority className="iris-brand-eye" />
+          <IrisWordmark width={110} priority className="iris-brand-wordmark" />
         </Link>
 
         <div className="panel p-6 md:p-7">

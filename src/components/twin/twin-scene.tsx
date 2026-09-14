@@ -119,7 +119,7 @@ function NodePin({
             whiteSpace: "nowrap",
           }}
         >
-          {node.label} · mock position
+          {node.label} - mock position
         </div>
       </Html>
     </group>

@@ -23,7 +23,7 @@ export type ClusterEventForEval = {
 
 /**
  * Runs after a cluster_event with escalate=true is persisted (PRD §9 Stage 8,
- * implementation plan §7). Never throws — alert-engine failures must not take
+ * implementation plan §7). Never throws - alert-engine failures must not take
  * down ingestion; every outcome (including failure) is written to
  * pipeline_trace so it's visible on the incident timeline.
  */
@@ -189,7 +189,7 @@ export async function evaluateClusterEvent(
       detail: { severity, blast_suspected: overlap },
     });
 
-    // Notify only on a genuinely new alert — plan §7.2: a folded repeat into
+    // Notify only on a genuinely new alert - plan §7.2: a folded repeat into
     // an existing open alert must never re-notify.
     await dispatchNotifications(newAlert.id, traceId);
 

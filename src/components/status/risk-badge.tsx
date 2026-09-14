@@ -4,7 +4,7 @@ export function RiskBadge({ score, size = "sm" }: { score: number | null; size?:
   if (score == null) {
     return (
       <span className="badge badge-unknown">
-        <span aria-hidden>?</span> —
+        <span aria-hidden>?</span> -
       </span>
     );
   }
@@ -29,7 +29,7 @@ export function RiskBadge({ score, size = "sm" }: { score: number | null; size?:
       className="badge"
       style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}
     >
-      {RISK_BAND_LABEL[band]} · {score.toFixed(2)}
+      {RISK_BAND_LABEL[band]} - {score.toFixed(2)}
     </span>
   );
 }

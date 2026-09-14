@@ -19,7 +19,7 @@ const STALE_AFTER_MS = 5 * 60 * 1000; // 3x an assumed 1/min baseline, PRD §11.
 const OFFLINE_AFTER_MS = 15 * 60 * 1000;
 
 /**
- * Pure domain function — no DB/Next.js access. Sensor health rules follow the
+ * Pure domain function - no DB/Next.js access. Sensor health rules follow the
  * PRD's non-negotiable principle: unknown is never coerced to "safe"/green.
  */
 export function computeNodeHealth(

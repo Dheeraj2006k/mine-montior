@@ -45,7 +45,7 @@ export default function NotificationsAdminPage() {
             style={{ borderColor: "var(--border)" }}
           >
             <span className="text-sm">
-              {n.channel} → {n.contacts?.full_name ?? "unknown"} · {n.status}
+              {n.channel} {"->"} {n.contacts?.full_name ?? "unknown"} - {n.status}
               {n.provider === "demo" && (
                 <span className="label-caveat ml-2" style={{ fontSize: "0.65rem" }}>
                   demo
@@ -75,8 +75,8 @@ export default function NotificationsAdminPage() {
             style={{ borderColor: "var(--border)" }}
           >
             <span className="text-sm">
-              {c.contacts?.full_name ?? "unknown"} · {c.outcome ?? "pending"}
-              {c.dtmf_digit && ` · pressed ${c.dtmf_digit}`}
+              {c.contacts?.full_name ?? "unknown"} - {c.outcome ?? "pending"}
+              {c.dtmf_digit && ` - pressed ${c.dtmf_digit}`}
             </span>
             <span className="text-xs text-muted" style={{ color: "var(--muted)" }}>
               {new Date(c.created_at).toLocaleString()}

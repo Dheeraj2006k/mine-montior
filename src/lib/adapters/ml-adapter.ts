@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 
-// Fixed exit contract, PRD §11.2 — the entire point of this adapter boundary
+// Fixed exit contract, PRD §11.2 - the entire point of this adapter boundary
 // is that nothing downstream needs to change when the underlying source
 // changes (mock -> DB row written by the ML team's own process -> a live
 // FastAPI /predict call), per plan §4.2/§18 Phase 8's exit criterion:
@@ -57,7 +57,7 @@ async function fetchFromHttpService(siteId: string): Promise<PredictionContract 
       is_stale: Date.now() - generatedAtMs > STALE_AFTER_MS,
     };
   } catch {
-    return null; // unreachable/slow service — caller falls back, never crashes the dashboard
+    return null; // unreachable/slow service - caller falls back, never crashes the dashboard
   }
 }
 
@@ -92,7 +92,7 @@ async function fetchFromDb(siteId: string): Promise<PredictionContract | null> {
  * Preference order: a live FastAPI service (ML_SERVICE_URL configured) >
  * a row the ML team's own process wrote to `predictions` > a clearly
  * labelled mock. This mirrors the plan's real|mock adapter switching
- * without needing a separate flag — presence of real infrastructure is
+ * without needing a separate flag - presence of real infrastructure is
  * the switch, exactly like the email/SMS/voice adapters in this codebase.
  */
 export async function fetchPrediction(siteId: string): Promise<PredictionResult> {

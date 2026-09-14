@@ -3,7 +3,7 @@ import { ok, fail } from "@/lib/api/envelope";
 
 // PRD §12: dismissing closes THIS alert instance only. It has no effect on
 // ingestion, ML processing, or the alert engine's ability to open a brand
-// new alert for the same node/severity band on the next escalation — no
+// new alert for the same node/severity band on the next escalation - no
 // human action anywhere in this system gets permanent veto power.
 export async function POST(
   request: Request,

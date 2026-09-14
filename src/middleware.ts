@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Required even though we don't use the return value directly — this is
+  // Required even though we don't use the return value directly - this is
   // what actually refreshes an expiring session cookie on every request.
   const {
     data: { user },

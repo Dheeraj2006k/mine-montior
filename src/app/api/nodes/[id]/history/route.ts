@@ -29,7 +29,7 @@ export async function GET(
     "id, recorded_at, tilt_x_filt, tilt_y_filt, vibration_filt, displacement_filt, risk_score, sensor_ok, seq_num";
 
   // `limit` (no from/to): most recent N readings, for compact widgets like a
-  // dashboard sparkline — distinct code path from the full-range downsample
+  // dashboard sparkline - distinct code path from the full-range downsample
   // below, which serves the node detail page's full chart.
   if (Number.isInteger(limitParam) && limitParam > 0 && !from && !to) {
     const { data, error } = await supabaseAdmin

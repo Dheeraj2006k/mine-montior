@@ -49,7 +49,7 @@ export default function SignupPage() {
     return (
       <AuthCard
         title="Check your email"
-        subtitle="IRIS — Intelligent RealTime Instability Sensing"
+        subtitle="Intelligent Real-time Instability Sensing"
         footer={
           <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--accent)" }}>
             Back to sign in
@@ -67,7 +67,7 @@ export default function SignupPage() {
   return (
     <AuthCard
       title="Create an account"
-      subtitle="IRIS — Intelligent RealTime Instability Sensing"
+      subtitle="Intelligent Real-time Instability Sensing"
       footer={
         <>
           Already have an account?{" "}
@@ -129,7 +129,7 @@ export default function SignupPage() {
         )}
 
         <button type="submit" className="btn btn-primary mt-1" disabled={loading}>
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? "Creating account..." : "Create account"}
         </button>
       </form>
     </AuthCard>

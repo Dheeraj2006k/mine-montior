@@ -62,10 +62,10 @@ export default function NodesPage() {
                   <RiskBadge score={n.latest_risk_score} />
                 </td>
                 <td className="text-muted" style={{ color: "var(--muted)" }}>
-                  {n.packet_loss_pct != null ? `${n.packet_loss_pct}%` : "—"}
+                  {n.packet_loss_pct != null ? `${n.packet_loss_pct}%` : "-"}
                 </td>
                 <td className="text-muted" style={{ color: "var(--muted)" }}>
-                  {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "—"}
+                  {n.last_seen_at ? new Date(n.last_seen_at).toLocaleString() : "-"}
                 </td>
               </tr>
             ))}
