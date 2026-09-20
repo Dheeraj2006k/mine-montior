@@ -14,19 +14,26 @@ import {
   ContactsIcon,
   BellIcon,
   PulseIcon,
+  GearIcon,
+  TrendIcon,
+  SatelliteIcon,
 } from "@/components/layout/nav-icons";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
   { href: "/nodes", label: "Nodes", icon: NodesIcon },
   { href: "/alerts", label: "Alerts", icon: AlertIcon },
+  { href: "/predictions", label: "Predictions", icon: TrendIcon },
+  { href: "/insar", label: "InSAR", icon: SatelliteIcon },
   { href: "/twin", label: "Digital Twin", icon: TwinIcon },
 ];
 
 const ADMIN_NAV = [
+  { href: "/setup", label: "Site setup", icon: GearIcon },
   { href: "/admin/blasts", label: "Blast schedule", icon: BlastIcon },
   { href: "/admin/contacts", label: "Contacts", icon: ContactsIcon },
   { href: "/admin/notifications", label: "Notification log", icon: BellIcon },
+  { href: "/admin/users", label: "Users & roles", icon: GearIcon },
   { href: "/system", label: "System health", icon: PulseIcon },
 ];
 
@@ -69,11 +76,16 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
 function AccountFooter() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => setRole(body?.data?.role ?? null))
+      .catch(() => setRole(null));
   }, []);
 
   async function handleSignOut() {
@@ -90,9 +102,16 @@ function AccountFooter() {
         className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
         style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
       >
-        <span className="text-xs truncate" style={{ color: "var(--muted)" }} title={email ?? undefined}>
-          {email ?? "..."}
-        </span>
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <span className="text-xs truncate" style={{ color: "var(--muted)" }} title={email ?? undefined}>
+            {email ?? "..."}
+          </span>
+          {role && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--faint)" }}>
+              {role}
+            </span>
+          )}
+        </div>
         <button
           onClick={handleSignOut}
           disabled={signingOut}

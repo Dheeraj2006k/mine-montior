@@ -207,6 +207,76 @@ body {
 .data-table tbody tr:hover { background: var(--surface-hover); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 
+/* Dashboard: stat tiles with an accent rail */
+
+.stat-tile {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 52%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.1rem;
+  overflow: hidden;
+}
+.stat-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--tile-accent, var(--border-strong));
+}
+.stat-tile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--tile-accent, var(--muted));
+  background: color-mix(in srgb, var(--tile-accent, var(--muted)) 14%, transparent);
+}
+
+/* Section header with icon chip */
+
+.section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  flex-shrink: 0;
+}
+
+/* Hero / command strip */
+
+.hero-strip {
+  background:
+    radial-gradient(circle at 8% -20%, rgba(0, 166, 214, 0.16), transparent 55%),
+    radial-gradient(circle at 100% 120%, rgba(22, 163, 74, 0.1), transparent 50%),
+    var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--normal);
+  background: color-mix(in srgb, var(--normal) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--normal) 30%, var(--border));
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem 0.3rem 0.55rem;
+}
+
 /* Status dot */
 
 .status-dot {
@@ -436,4 +506,18 @@ body {
 @keyframes iris-load {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+/* Phase 11: respect prefers-reduced-motion everywhere, not just the twin
+   page's dedicated toggle - decorative animation (pulses, opening loader
+   sweep/orbit, ping dots) never carries information on its own (state is
+   always also shown via color+icon+text per PRD §5), so it is always safe
+   to remove entirely rather than merely slow down. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

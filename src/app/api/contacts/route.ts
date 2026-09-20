@@ -1,9 +1,13 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 const SITE_ID = "SIH-DEMO-01";
 
 export async function GET() {
+  const denied = await requireRole("admin");
+  if (denied) return denied;
+
   const { data, error } = await supabaseAdmin
     .from("contacts")
     .select("*")
@@ -16,6 +20,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireRole("admin");
+  if (denied) return denied;
+
   const body = await request.json().catch(() => null);
   if (!body || typeof body.full_name !== "string" || typeof body.role !== "string") {
     return fail("VALIDATION_FAILED", "full_name and role are required", [], 400);

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 const SITE_ID = "SIH-DEMO-01"; // single-site prototype; no site selector yet
 
@@ -16,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireRole("operator");
+  if (denied) return denied;
+
   const body = await request.json().catch(() => null);
   if (!body || typeof body.planned_start !== "string" || typeof body.planned_end !== "string") {
     return fail("VALIDATION_FAILED", "planned_start and planned_end are required", [], 400);

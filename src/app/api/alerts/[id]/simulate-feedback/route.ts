@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
 import { isVoiceDemoMode } from "@/lib/adapters/voice-adapter";
 import { handleDtmfResponse } from "@/lib/domain/notification-engine";
+import { requireRole } from "@/lib/auth/roles";
 
 // DEMO_MODE only (plan §8.6): lets the dashboard drive the exact same
 // handleDtmfResponse code path a real Twilio call would, without a phone.
@@ -14,6 +15,9 @@ export async function POST(
   if (!isVoiceDemoMode()) {
     return fail("DEMO_MODE_DISABLED", "Voice provider is configured; simulated feedback is disabled.", [], 403);
   }
+
+  const denied = await requireRole("operator");
+  if (denied) return denied;
 
   const { id } = await params;
   const alertId = Number(id);

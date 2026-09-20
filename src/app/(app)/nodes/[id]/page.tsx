@@ -8,6 +8,7 @@ import { apiGet } from "@/lib/api/client";
 import { HealthBadge } from "@/components/status/health-badge";
 import { RiskBadge } from "@/components/status/risk-badge";
 import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
+import { SourceBadge } from "@/components/status/source-badge";
 import type { HealthState } from "@/lib/domain/node-health";
 
 type NodeDetail = {
@@ -16,6 +17,11 @@ type NodeDetail = {
   site_id: string;
   mock_latitude: number;
   mock_longitude: number;
+  is_mock: boolean;
+  registered_latitude?: number | null;
+  registered_longitude?: number | null;
+  registered_at?: string | null;
+  baseline_reading_id?: number | null;
   latest_risk_score: number | null;
   last_seen_at: string | null;
   packet_loss_pct: number | null;
@@ -65,12 +71,20 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-lg font-semibold">{node.label}</h1>
-          <div className="mt-1">
-            <MockPositionLabel />
+          <div className="mt-1 flex items-center gap-2">
+            <SourceBadge isMock={node.is_mock} registered={!!node.registered_at} />
+            {node.is_mock && <MockPositionLabel />}
           </div>
         </div>
         <HealthBadge state={node.health_state} />
       </div>
+
+      {!node.is_mock && node.registered_at && (
+        <p className="label-caveat self-start">
+          GNSS-registered {new Date(node.registered_at).toLocaleString()} at {node.registered_latitude?.toFixed(5)},{" "}
+          {node.registered_longitude?.toFixed(5)} - captured once at install, not continuously tracked
+        </p>
+      )}
 
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="panel p-4">
@@ -92,7 +106,10 @@ export default function NodeDetailPage({ params }: { params: Promise<{ id: strin
           label="Last seen"
           value={node.last_seen_at ? new Date(node.last_seen_at).toLocaleTimeString() : "-"}
         />
-        <Stat label="Site" value={node.site_id} />
+        <Stat
+          label="Baseline"
+          value={!node.registered_at ? "not registered" : node.baseline_reading_id ? "captured" : "pending"}
+        />
       </section>
 
       <section className="panel p-4 md:p-5">

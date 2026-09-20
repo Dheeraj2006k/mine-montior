@@ -126,14 +126,73 @@ function NodePin({
   );
 }
 
+// PRD-2 §4 (bord-and-pillar): illustrative pillar/gallery pattern generated
+// purely from the configured scalar dimensions (pillar_width_m,
+// gallery_width_m) - NOT surveyed pillar positions, since the setup wizard
+// only captures dimensions, never real grid coordinates. A subset of
+// pillars render dimmed to represent extractionPct - a visual aid, not a
+// claim about which specific pillars were actually removed.
+function PillarGrid({
+  pillarWidthM,
+  galleryWidthM,
+  extractionPct,
+  gridCount = 6,
+}: {
+  pillarWidthM: number;
+  galleryWidthM: number;
+  extractionPct: number;
+  gridCount?: number;
+}) {
+  const spacing = Math.max(2, pillarWidthM + galleryWidthM);
+  const removedEvery = extractionPct >= 90 ? 1 : extractionPct <= 0 ? Infinity : Math.max(1, Math.round(100 / extractionPct));
+
+  const pillars = useMemo(() => {
+    const list: { x: number; z: number; removed: boolean }[] = [];
+    const half = (gridCount - 1) / 2;
+    let i = 0;
+    for (let row = 0; row < gridCount; row++) {
+      for (let col = 0; col < gridCount; col++) {
+        i++;
+        list.push({
+          x: (col - half) * spacing,
+          z: (row - half) * spacing,
+          removed: i % removedEvery === 0,
+        });
+      }
+    }
+    return list;
+  }, [gridCount, spacing, removedEvery]);
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -1.5, 0]}>
+        <planeGeometry args={[gridCount * spacing + spacing, gridCount * spacing + spacing]} />
+        <meshStandardMaterial color="#141b26" />
+      </mesh>
+      {pillars.map((p, idx) => (
+        <mesh key={idx} position={[p.x, p.removed ? -1.3 : 0, p.z]} castShadow>
+          <boxGeometry args={[Math.max(1, pillarWidthM * 0.6), p.removed ? 0.3 : 3, Math.max(1, pillarWidthM * 0.6)]} />
+          <meshStandardMaterial color={p.removed ? "#3a2a2a" : "#3d4b5c"} opacity={p.removed ? 0.35 : 1} transparent={p.removed} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 export function TwinScene({
   nodes,
   predictedZone,
   scrubT,
+  mode = "longwall",
+  pillarGeometry,
+  extractionPct = 0,
 }: {
   nodes: TwinNode[];
   predictedZone: PredictedZoneEntry[];
   scrubT: number;
+  mode?: "longwall" | "bord_and_pillar";
+  pillarGeometry?: { pillarWidthM: number; galleryWidthM: number } | null;
+  extractionPct?: number;
 }) {
   const origin = useMemo(
     () =>
@@ -167,7 +226,15 @@ export function TwinScene({
     <Canvas shadows camera={{ position: [40, 40, 40], fov: 45 }} frameloop="always">
       <ambientLight intensity={0.6} />
       <directionalLight position={[30, 50, 20]} intensity={1} castShadow />
-      <Terrain nodes={nodes} origin={origin} severityByNode={severityByNode} scrubT={scrubT} />
+      {mode === "bord_and_pillar" && pillarGeometry ? (
+        <PillarGrid
+          pillarWidthM={pillarGeometry.pillarWidthM}
+          galleryWidthM={pillarGeometry.galleryWidthM}
+          extractionPct={extractionPct}
+        />
+      ) : (
+        <Terrain nodes={nodes} origin={origin} severityByNode={severityByNode} scrubT={scrubT} />
+      )}
       {nodePositions.map(({ node, pos }) => (
         <NodePin
           key={node.node_id}

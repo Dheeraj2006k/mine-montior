@@ -76,6 +76,32 @@ export function BellIcon({ size = 17 }: IconProps) {
   );
 }
 
+export function TrendIcon({ size = 17 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...common}>
+      <path d="M3 17 9 11 13 15 21 7" /><path d="M15 7h6v6" />
+    </svg>
+  );
+}
+
+export function SatelliteIcon({ size = 17 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...common}>
+      <rect x="8.5" y="8.5" width="7" height="7" rx="1" transform="rotate(45 12 12)" />
+      <path d="M4 4l2.5 2.5M20 4l-2.5 2.5M12 15.5V21M3 21l3.5-3.5M21 21l-3.5-3.5" />
+    </svg>
+  );
+}
+
+export function GearIcon({ size = 17 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...common}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.1 5.9l-1.55 1.55M7.45 16.55 5.9 18.1M18.1 18.1l-1.55-1.55M7.45 7.45 5.9 5.9" />
+    </svg>
+  );
+}
+
 export function PulseIcon({ size = 17 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...common}>

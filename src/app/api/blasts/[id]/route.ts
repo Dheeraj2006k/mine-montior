@@ -1,10 +1,14 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireRole("operator");
+  if (denied) return denied;
+
   const { id } = await params;
   const blastId = Number(id);
   if (!Number.isInteger(blastId)) {
