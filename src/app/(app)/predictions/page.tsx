@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api/client";
 import { ConfidenceBadge } from "@/components/status/confidence-badge";
-import { useTerm, useViewMode } from "@/components/view-mode/view-mode-context";
+import { useTerm, useViewMode, useTrendCopy } from "@/components/view-mode/view-mode-context";
 
 type PredictedZoneEntry = { node_id?: number; severity_0_to_1?: number };
 type NodeRow = { node_id: number; label: string };
@@ -18,12 +18,6 @@ type PredictionData = {
 };
 
 type SiteConfigData = { mine_type: "longwall" | "bord_and_pillar" } | null;
-
-const TREND_STYLE: Record<string, { arrow: string; color: string }> = {
-  accelerating: { arrow: "↑", color: "var(--offline)" },
-  stable: { arrow: "→", color: "var(--muted)" },
-  decelerating: { arrow: "↓", color: "var(--normal)" },
-};
 
 export default function PredictionsPage() {
   const { mode } = useViewMode();
@@ -92,18 +86,20 @@ export default function PredictionsPage() {
 
       <div className="panel p-4 md:p-5">
         {!prediction || zoneEntries.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
-            No prediction available yet - the ML service hasn&apos;t written a result.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              Prediction not available yet&hellip;
+            </p>
+            <p className="text-xs" style={{ color: "var(--faint)" }}>
+              The ML service hasn&apos;t written a result. This is an honest empty state, not a placeholder.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="panel-2 rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>{trendLabel}</div>
-                <div className="text-lg font-semibold mt-0.5 flex items-center gap-1.5" style={{ color: TREND_STYLE[prediction.trend]?.color ?? "var(--foreground)" }}>
-                  <span>{TREND_STYLE[prediction.trend]?.arrow ?? "-"}</span>
-                  <span className="capitalize">{prediction.trend}</span>
-                </div>
+                <PredictionTrendValue trend={prediction.trend} />
               </div>
               <div className="panel-2 rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>{actionWindowLabel}</div>
@@ -165,6 +161,16 @@ export default function PredictionsPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function PredictionTrendValue({ trend }: { trend: string }) {
+  const { arrow, text, color } = useTrendCopy(trend);
+  return (
+    <div className="text-lg font-semibold mt-0.5 flex items-center gap-1.5" style={{ color }}>
+      <span>{arrow}</span>
+      <span>{text}</span>
     </div>
   );
 }

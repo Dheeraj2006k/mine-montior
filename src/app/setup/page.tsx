@@ -101,6 +101,7 @@ export default function SetupPage() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
 
   // Step 1
   const [siteName, setSiteName] = useState("");
@@ -213,12 +214,42 @@ export default function SetupPage() {
       if (!res.ok) {
         throw new Error(body?.error?.message ?? `Setup failed with status ${res.status}`);
       }
-      router.push("/dashboard");
+      setSubmitting(false);
+      setJustCompleted(true);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Setup failed");
       setSubmitting(false);
     }
+  }
+
+  if (justCompleted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10 gap-6" style={{ background: "var(--bg)" }}>
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <IrisIconMark size={30} priority className="iris-brand-eye" />
+          <IrisWordmark width={100} priority className="iris-brand-wordmark" />
+        </Link>
+        <div className="panel p-6 md:p-8 w-full max-w-md flex flex-col items-center gap-4 text-center">
+          <span className="status-dot" style={{ width: 10, height: 10, color: "var(--normal)", background: "var(--normal)" }} />
+          <div>
+            <h1 className="text-lg font-semibold">Site configured</h1>
+            <p className="text-sm mt-1.5" style={{ color: "var(--muted)" }}>
+              {siteName || "Your site"} is set up as {mineType === "longwall" ? "Longwall" : "Bord-and-Pillar"}.
+              Next, register a physical sensor node so the dashboard has something to show.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2.5 w-full">
+            <Link href="/nodes" className="btn btn-primary flex-1">
+              Register your first node &rarr;
+            </Link>
+            <Link href="/dashboard" className="btn flex-1">
+              Go to dashboard &rarr;
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

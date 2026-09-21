@@ -56,10 +56,15 @@ export default function InsarPage() {
       <section className="panel p-4 md:p-5 flex flex-col gap-3">
         <h2 className="text-sm font-semibold">Acquisition</h2>
         {!layer || !layer.available ? (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
-            No InSAR observation available yet - the InSAR team hasn&apos;t populated a raster for this
-            site. This is an honest empty state, not a placeholder.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              Waiting for satellite observation&hellip;
+            </p>
+            <p className="text-xs" style={{ color: "var(--faint)" }}>
+              No InSAR observation available yet - the InSAR team hasn&apos;t populated a raster for
+              this site. This is an honest empty state, not a placeholder.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             <SinglePairLabel from={layer.acquisition_dates?.from ?? null} to={layer.acquisition_dates?.to ?? null} />

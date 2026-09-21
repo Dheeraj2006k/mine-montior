@@ -43,11 +43,14 @@ export function MineMap({
   aoi,
   mineType,
   onSelectNode,
+  heightClassName = "h-96",
 }: {
   nodes: MapNode[];
   aoi?: Aoi | null;
   mineType?: "longwall" | "bord_and_pillar" | null;
   onSelectNode?: (nodeId: number) => void;
+  /** Tailwind height class - lets the map be the dashboard centerpiece without changing map logic. */
+  heightClassName?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -153,7 +156,7 @@ export function MineMap({
 
   return (
     <div className="relative">
-      <div ref={containerRef} className="w-full h-96 rounded-lg overflow-hidden" />
+      <div ref={containerRef} className={`w-full ${heightClassName} rounded-lg overflow-hidden`} />
       {mineType && (
         <span
           className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full z-10"

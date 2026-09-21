@@ -59,6 +59,11 @@ export function decideDedup(
   return { action: "update_existing", alertId: existingOpenAlert.id };
 }
 
+// PRD-2 "decision log" style: readable, but every clause is built only from
+// fields this function actually receives - never a panel name, satellite
+// confirmation, or cause that isn't in evidence. sensor_health_unknown gets
+// its own sentence shape deliberately (never phrased as a "confirmed"
+// reading, since that's precisely what it isn't - PRD §8.5).
 export function buildSummary(params: {
   nodeLabel: string;
   reason: string;
@@ -66,13 +71,14 @@ export function buildSummary(params: {
   severity: AlertSeverity;
 }): string {
   const { nodeLabel, reason, evidenceScore, severity } = params;
+
+  if (reason === "sensor_health_unknown") {
+    return `${nodeLabel}: sensor health is uncertain, preventing a confident read (evidence score ${evidenceScore.toFixed(2)}). Treated as ${severity}, not cleared as normal.`;
+  }
+
   const reasonText =
-    reason === "strong_single_signal"
-      ? "a single strong signal"
-      : reason === "sensor_health_unknown"
-        ? "sensor health preventing a confident read"
-        : "combined evidence";
-  return `${nodeLabel} escalated on ${reasonText} (evidence score ${evidenceScore.toFixed(2)}, severity ${severity}).`;
+    reason === "strong_single_signal" ? "one sensor showing a strong signal" : "multiple signals agreeing";
+  return `${nodeLabel} shows a ${severity}-level instability signal from ${reasonText} (evidence score ${evidenceScore.toFixed(2)}).`;
 }
 
 export type BlastWindow = { planned_start: string; planned_end: string };

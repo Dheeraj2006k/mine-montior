@@ -55,6 +55,44 @@ export function useTerm(key: keyof typeof TERM): string {
   return TERM[key][mode];
 }
 
+// Team-leader spec: trend enum -> plain-language + arrow. Technical view
+// keeps the raw enum word (still meaningful to an engineer); Plain view
+// gets the arrow + human phrase. Centralised so /dashboard, /predictions,
+// and /twin render the same words for the same trend value.
+export const TREND_COPY: Record<string, { arrow: string; plain: string; technical: string; color: string }> = {
+  accelerating: { arrow: "↑", plain: "Getting Worse", technical: "Accelerating", color: "var(--offline)" },
+  stable: { arrow: "→", plain: "Steady", technical: "Stable", color: "var(--muted)" },
+  decelerating: { arrow: "↓", plain: "Improving", technical: "Decelerating", color: "var(--normal)" },
+};
+
+export function useTrendCopy(trend: string | undefined | null) {
+  const { mode } = useViewMode();
+  const entry = trend ? TREND_COPY[trend] : undefined;
+  if (!entry) return { arrow: "-", text: trend ?? "-", color: "var(--foreground)" };
+  return { arrow: entry.arrow, text: mode === "plain" ? entry.plain : entry.technical, color: entry.color };
+}
+
+// Cluster-event escalation reason, translated for Plain view. Deliberately
+// NOT an "N of M sensors agree" count - no such discrete cross-sensor
+// count exists in the schema today (cluster_events.triggering_node_id is a
+// single node; alerts.event_count tracks repeated escalations over time,
+// not distinct corroborating sensors). Inventing N/M here would violate
+// the "do not invent evidence" rule, so this stays qualitative until the
+// alert engine actually tracks per-alert corroborating-node counts.
+export const REASON_COPY: Record<string, { plain: string; technical: string }> = {
+  strong_single_signal: { plain: "One sensor showing a strong signal", technical: "strong_single_signal" },
+  combined_evidence: { plain: "Multiple signals agreeing", technical: "combined_evidence" },
+  sensor_health_unknown: { plain: "Sensor health uncertain", technical: "sensor_health_unknown" },
+};
+
+export function useReasonCopy(reason: string | undefined | null): string {
+  const { mode } = useViewMode();
+  if (!reason) return "-";
+  const entry = REASON_COPY[reason];
+  if (!entry) return reason;
+  return mode === "plain" ? entry.plain : entry.technical;
+}
+
 export function ViewModeToggle() {
   const { mode, setMode } = useViewMode();
   return (

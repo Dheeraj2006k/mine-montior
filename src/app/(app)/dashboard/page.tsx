@@ -11,7 +11,15 @@ import { SourceBadge } from "@/components/status/source-badge";
 import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
 import { MineMap, type MapNode } from "@/components/map/mine-map";
 import { LiveSensorFeed } from "@/components/nodes/live-sensor-feed";
-import { ViewModeToggle, useTerm } from "@/components/view-mode/view-mode-context";
+import { ViewModeToggle, useTerm, useTrendCopy } from "@/components/view-mode/view-mode-context";
+import {
+  siteRiskState,
+  SITE_RISK_LABEL,
+  SITE_RISK_COLOR,
+  SITE_WAITING_COLOR,
+  type OperationalRiskState,
+} from "@/lib/domain/site-risk-state";
+import type { AlertSeverity } from "@/lib/domain/alert-engine";
 import type { HealthState } from "@/lib/domain/node-health";
 
 type NodeRow = {
@@ -63,11 +71,15 @@ const SEVERITY_COLOR: Record<string, string> = {
   critical: "var(--offline)",
 };
 
-const TREND_STYLE: Record<string, { arrow: string; color: string }> = {
-  accelerating: { arrow: "↑", color: "var(--offline)" },
-  stable: { arrow: "→", color: "var(--muted)" },
-  decelerating: { arrow: "↓", color: "var(--normal)" },
-};
+function TrendValue({ trend, large }: { trend: string; large?: boolean }) {
+  const { arrow, text, color } = useTrendCopy(trend);
+  return (
+    <div className={`${large ? "text-lg" : "text-base"} font-semibold mt-0.5 flex items-center gap-1.5`} style={{ color }}>
+      <span>{arrow}</span>
+      <span>{text}</span>
+    </div>
+  );
+}
 
 function ClockIcon({ size = 13 }: { size?: number }) {
   return (
@@ -83,13 +95,6 @@ function NodesGlyph() {
     <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="6" cy="6" r="2.4" /><circle cx="18" cy="6" r="2.4" /><circle cx="12" cy="18" r="2.4" />
       <path d="M8.2 7.2 10.5 15.8M15.8 7.2 13.5 15.8M8.5 6h7" />
-    </svg>
-  );
-}
-function PulseGlyph() {
-  return (
-    <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 12h4l2-7 4 14 2-7h8" />
     </svg>
   );
 }
@@ -132,6 +137,27 @@ function BellGlyph() {
   return (
     <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z" /><path d="M9.5 17a2.5 2.5 0 0 0 5 0" />
+    </svg>
+  );
+}
+// Icon changes shape per state, not just color - PRD rule: icon + color +
+// text together, never color alone. "waiting" gets its own distinct glyph
+// (three dots, like a loading indicator) - never the normal checkmark.
+function ShieldGlyph({ size = 28, state }: { size?: number; state: OperationalRiskState | "waiting" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 4 6v6c0 4.5 3.2 7.5 8 9 4.8-1.5 8-4.5 8-9V6l-8-3Z" />
+      {state === "waiting" && (
+        <>
+          <circle cx="9" cy="12" r="0.6" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="12" r="0.6" fill="currentColor" stroke="none" />
+        </>
+      )}
+      {state === "normal" && <path d="M9 12.5 11 14.5 15.5 10" />}
+      {state === "watch" && <><path d="M12 8v4.5" /><circle cx="12" cy="15.2" r="0.5" fill="currentColor" /></>}
+      {state === "warning" && <><path d="M12 7.5v5" /><circle cx="12" cy="14.8" r="0.5" fill="currentColor" /></>}
+      {state === "critical" && <path d="M9.5 9.5 14.5 14.5M14.5 9.5 9.5 14.5" />}
     </svg>
   );
 }
@@ -211,6 +237,8 @@ export default function DashboardPage() {
 
   const healthy = nodes.filter((n) => n.health_state === "normal").length;
   const warningNodes = nodes.filter((n) => n.health_state === "warning").length;
+  const offlineCount = nodes.filter((n) => n.health_state === "offline").length;
+  const onlineCount = nodes.length - offlineCount;
   const troubledNodes = nodes.filter((n) => n.health_state === "unknown" || n.health_state === "stale" || n.health_state === "offline").length;
   const maxRisk = nodes.length > 0 ? Math.max(...nodes.map((n) => n.latest_risk_score ?? 0)) : null;
   const criticalAlerts = alerts.filter((a) => a.severity === "critical" || a.severity === "high").length;
@@ -226,7 +254,25 @@ export default function DashboardPage() {
     (e): e is Required<PredictedZoneEntry> => typeof e.node_id === "number" && typeof e.severity_0_to_1 === "number",
   );
 
-  const allSystemsNormal = nodes.length > 0 && healthy === nodes.length && alerts.length === 0;
+  const { dataState: heroDataState, riskState: heroRiskState } = siteRiskState({
+    maxNodeRiskScore: maxRisk,
+    activeAlertSeverities: alerts.map((a) => a.severity as AlertSeverity),
+    anyNodeNotNormal: nodes.length > 0 && healthy < nodes.length,
+  });
+  const heroExplanation =
+    heroDataState === "waiting"
+      ? nodes.length === 0
+        ? "No nodes registered yet - nothing to determine a condition from."
+        : "No sensor readings received yet - waiting for the first data point before a condition can be shown."
+      : heroRiskState === "normal"
+        ? `All ${nodes.length} node${nodes.length === 1 ? "" : "s"} normal, no active alerts.`
+        : alerts.length > 0
+          ? `${alerts.length} active alert${alerts.length === 1 ? "" : "s"}${
+              criticalAlerts > 0 ? ` (${criticalAlerts} high/critical)` : ""
+            }${offlineCount > 0 ? `, ${offlineCount} node${offlineCount === 1 ? "" : "s"} offline` : ""}.`
+          : `${nodes.length - healthy} of ${nodes.length} nodes not reporting normal - no active alert yet.`;
+
+  const allSystemsNormal = heroDataState === "available" && heroRiskState === "normal";
 
   const siteConfig = siteConfigQuery.data?.data ?? null;
   const showSetupBanner = !siteConfigQuery.isLoading && !siteConfig?.setup_completed;
@@ -314,45 +360,59 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat strip */}
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatTile label="Nodes online" value={`${nodes.length}`} icon={<NodesGlyph />} accent="var(--accent)" />
-        <StatTile
-          label="Normal"
-          value={`${healthy}/${nodes.length}`}
-          icon={<PulseGlyph />}
-          accent={nodes.length > 0 && healthy < nodes.length ? "var(--warning)" : "var(--normal)"}
-        />
-        <StatTile
-          label="Warning"
-          value={warningNodes}
-          icon={<AlertGlyph />}
-          accent={warningNodes > 0 ? "var(--warning)" : "var(--normal)"}
-          caption={troubledNodes > 0 ? `${troubledNodes} unknown/stale/offline` : undefined}
-        />
-        <StatTile
-          label="High / critical"
-          value={criticalAlerts}
-          icon={<AlertGlyph />}
-          accent={criticalAlerts > 0 ? "var(--offline)" : "var(--normal)"}
-        />
-        <StatTile
-          label="Active alerts"
-          value={alerts.length}
-          icon={<BellGlyph />}
-          accent={alerts.length > 0 ? "var(--offline)" : "var(--normal)"}
-        />
-        <StatTile
-          label={stabilityLabel}
-          value={maxRisk != null ? <RiskBadge score={maxRisk} size="lg" /> : "-"}
-          icon={<GaugeGlyph />}
-          accent={maxRisk != null && maxRisk >= 0.7 ? "var(--offline)" : maxRisk != null && maxRisk >= 0.4 ? "var(--warning)" : "var(--normal)"}
-          caption={<FuzzyIndexLabel />}
-          isBadgeValue
-        />
-      </section>
-
-      <LiveSensorFeed nodes={nodes.map((n) => ({ node_id: n.node_id, label: n.label, health_state: n.health_state }))} />
+      {/* Hero: one dominant site-level state - team-leader spec §3.
+          Waiting-for-data is rendered as its own distinct condition, never
+          as "Normal" - unknown must never read as safe. */}
+      {(() => {
+        const heroColor = heroDataState === "waiting" ? SITE_WAITING_COLOR : SITE_RISK_COLOR[heroRiskState!];
+        const iconState = heroDataState === "waiting" ? "waiting" : heroRiskState!;
+        return (
+          <section
+            className="risk-hero px-5 py-6 md:px-8 md:py-8 flex flex-col sm:flex-row items-start sm:items-center gap-5"
+            style={{ ["--hero-accent" as string]: heroColor }}
+          >
+            <span
+              className="flex items-center justify-center rounded-full shrink-0"
+              style={{
+                width: 64,
+                height: 64,
+                color: heroColor,
+                background: `color-mix(in srgb, ${heroColor} 16%, transparent)`,
+                border: `2px solid color-mix(in srgb, ${heroColor} 45%, var(--border))`,
+              }}
+            >
+              <ShieldGlyph state={iconState} />
+            </span>
+            <div className="min-w-0">
+              {heroDataState === "waiting" ? (
+                <>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--faint)" }}>
+                    Data state
+                  </div>
+                  <div className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: heroColor }}>
+                    Waiting for data
+                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-wide mt-1" style={{ color: "var(--faint)" }}>
+                    Operational risk: not yet determined
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "var(--faint)" }}>
+                    Site condition
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold tracking-tight" style={{ color: heroColor }}>
+                    {SITE_RISK_LABEL[heroRiskState!]}
+                  </div>
+                </>
+              )}
+              <p className="text-sm mt-1.5" style={{ color: "var(--muted)" }}>
+                {heroExplanation}
+              </p>
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="panel p-4 md:p-5">
         <SectionHeading icon={<MapGlyph />} title="Node map" right={<MockPositionLabel />} />
@@ -372,6 +432,7 @@ export default function DashboardPage() {
                     : null
                 }
                 onSelectNode={setSelectedNodeId}
+                heightClassName="h-[28rem]"
               />
             </div>
             {selectedNode && (
@@ -405,6 +466,48 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Secondary detail - supporting the hero, never competing with it */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatTile
+          label={stabilityLabel}
+          value={maxRisk != null ? <RiskBadge score={maxRisk} size="lg" /> : "-"}
+          icon={<GaugeGlyph />}
+          accent={maxRisk != null && maxRisk >= 0.65 ? "var(--offline)" : maxRisk != null && maxRisk >= 0.4 ? "var(--warning)" : "var(--normal)"}
+          caption={<FuzzyIndexLabel />}
+          isBadgeValue
+        />
+        <StatTile
+          label="Nodes online"
+          value={`${onlineCount}/${nodes.length}`}
+          icon={<NodesGlyph />}
+          accent={nodes.length > 0 && offlineCount > 0 ? "var(--offline)" : "var(--accent)"}
+          caption={offlineCount > 0 ? `${offlineCount} offline` : undefined}
+        />
+        <StatTile
+          label="Active alerts"
+          value={alerts.length}
+          icon={<BellGlyph />}
+          accent={alerts.length > 0 ? "var(--offline)" : "var(--normal)"}
+          caption={criticalAlerts > 0 ? `${criticalAlerts} high/critical` : undefined}
+        />
+        <StatTile
+          label={trendLabel}
+          value={prediction ? <TrendValue trend={prediction.trend} /> : "-"}
+          icon={<TrendGlyph />}
+          accent="var(--muted)"
+          isBadgeValue
+        />
+        <StatTile
+          label="Attention needed"
+          value={warningNodes + troubledNodes}
+          icon={<AlertGlyph />}
+          accent={warningNodes + troubledNodes > 0 ? "var(--warning)" : "var(--normal)"}
+          caption={troubledNodes > 0 ? `${troubledNodes} unknown/stale/offline` : undefined}
+        />
+      </section>
+
+      <LiveSensorFeed nodes={nodes.map((n) => ({ node_id: n.node_id, label: n.label, health_state: n.health_state }))} />
 
       <section className="panel p-4 md:p-5">
         <SectionHeading
@@ -452,10 +555,14 @@ export default function DashboardPage() {
         )}
 
         {!prediction || zoneEntries.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
-            No prediction available yet - the ML service hasn&apos;t written a result. This is an
-            honest empty state, not a placeholder.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              Prediction not available yet&hellip;
+            </p>
+            <p className="text-xs" style={{ color: "var(--faint)" }}>
+              The ML service hasn&apos;t written a result. This is an honest empty state, not a placeholder.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -463,13 +570,7 @@ export default function DashboardPage() {
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>
                   {trendLabel}
                 </div>
-                <div
-                  className="text-lg font-semibold mt-0.5 flex items-center gap-1.5"
-                  style={{ color: TREND_STYLE[prediction.trend]?.color ?? "var(--foreground)" }}
-                >
-                  <span>{TREND_STYLE[prediction.trend]?.arrow ?? "-"}</span>
-                  <span className="capitalize">{prediction.trend}</span>
-                </div>
+                <TrendValue trend={prediction.trend} large />
               </div>
               <div className="panel-2 rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>

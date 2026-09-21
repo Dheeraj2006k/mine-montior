@@ -277,6 +277,25 @@ body {
   padding: 0.3rem 0.7rem 0.3rem 0.55rem;
 }
 
+/* Hero risk state (Phase 3: one dominant site-level indicator) */
+
+.risk-hero {
+  position: relative;
+  border-radius: var(--radius);
+  border: 1px solid var(--hero-accent, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--hero-accent, var(--border)) 10%, transparent), transparent 60%),
+    var(--bg-elevated);
+  overflow: hidden;
+}
+.risk-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--hero-accent, var(--border));
+}
+
 /* Status dot */
 
 .status-dot {

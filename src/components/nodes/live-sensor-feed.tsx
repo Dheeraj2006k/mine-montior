@@ -112,52 +112,65 @@ export function LiveSensorFeed({ nodes }: { nodes: NodeSummary[] }) {
                   <RiskBadge score={latest?.risk_score ?? null} />
                 </div>
 
-                {history.length > 0 && (
-                  <div className="h-10 mb-3 -mx-1">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={sparkData}>
-                        <YAxis domain={[0, 1]} hide />
-                        <Line
-                          type="monotone"
-                          dataKey="v"
-                          stroke="var(--accent)"
-                          strokeWidth={1.5}
-                          dot={false}
-                          isAnimationActive={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                {history.length === 0 ? (
+                  <p className="text-xs py-3" style={{ color: "var(--faint)" }}>
+                    Waiting for first reading from {node.label}&hellip;
+                  </p>
+                ) : (
+                  <>
+                    <div className="h-10 mb-3 -mx-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={sparkData}>
+                          <YAxis domain={[0, 1]} hide />
+                          <Line
+                            type="monotone"
+                            dataKey="v"
+                            stroke="var(--accent)"
+                            strokeWidth={1.5}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
 
-                <div className="grid grid-cols-4 gap-3">
-                  <Metric
-                    label="Tilt X"
-                    value={latest?.tilt_x_filt != null ? latest.tilt_x_filt.toFixed(2) : "-"}
-                    unit="°"
-                  />
-                  <Metric
-                    label="Tilt Y"
-                    value={latest?.tilt_y_filt != null ? latest.tilt_y_filt.toFixed(2) : "-"}
-                    unit="°"
-                  />
-                  <Metric
-                    label="Vibration"
-                    value={latest?.vibration_filt != null ? latest.vibration_filt.toFixed(2) : "-"}
-                  />
-                  <Metric
-                    label="Displacement"
-                    value={latest?.displacement_filt != null ? latest.displacement_filt.toFixed(2) : "-"}
-                    unit="mm"
-                  />
-                </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      <Metric
+                        label="Tilt X"
+                        value={latest?.tilt_x_filt != null ? latest.tilt_x_filt.toFixed(2) : "-"}
+                        unit="°"
+                      />
+                      <Metric
+                        label="Tilt Y"
+                        value={latest?.tilt_y_filt != null ? latest.tilt_y_filt.toFixed(2) : "-"}
+                        unit="°"
+                      />
+                      <Metric
+                        label="Vibration"
+                        value={latest?.vibration_filt != null ? latest.vibration_filt.toFixed(2) : "-"}
+                      />
+                      <Metric
+                        label="Displacement"
+                        value={latest?.displacement_filt != null ? latest.displacement_filt.toFixed(2) : "-"}
+                        unit="mm"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
                   <span
                     className="text-[10px] font-semibold uppercase tracking-wide"
-                    style={{ color: latest?.sensor_ok === false ? "var(--unknown)" : "var(--normal)" }}
+                    style={{
+                      color:
+                        latest?.sensor_ok === true
+                          ? "var(--normal)"
+                          : latest?.sensor_ok === false
+                            ? "var(--unknown)"
+                            : "var(--faint)",
+                    }}
                   >
-                    {latest?.sensor_ok === false ? "sensor unhealthy" : "sensor ok"}
+                    {latest?.sensor_ok === true ? "sensor ok" : latest?.sensor_ok === false ? "sensor unhealthy" : "no data yet"}
                   </span>
                   <span className="text-[10px] text-faint" style={{ color: "var(--faint)" }}>
                     {secondsAgoLabel(latest?.recorded_at, now)}
