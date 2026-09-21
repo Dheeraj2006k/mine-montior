@@ -11,6 +11,7 @@ import { SourceBadge } from "@/components/status/source-badge";
 import { MockPositionLabel, FuzzyIndexLabel } from "@/components/labels";
 import { MineMap, type MapNode } from "@/components/map/mine-map";
 import { LiveSensorFeed } from "@/components/nodes/live-sensor-feed";
+import { InsarEvidenceCard } from "./insar-evidence-card";
 import { ViewModeToggle, useTerm, useTrendCopy } from "@/components/view-mode/view-mode-context";
 import {
   siteRiskState,
@@ -46,6 +47,7 @@ type AlertRow = {
 };
 
 type SiteConfigRow = {
+  site_id: string;
   mine_type: "longwall" | "bord_and_pillar";
   setup_completed: boolean;
   aoi_latitude: number | null;
@@ -320,7 +322,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-sm mt-1 flex items-center gap-1.5 flex-wrap" style={{ color: "var(--muted)" }}>
             <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-              SIH-DEMO-01
+              {siteConfig?.site_id ?? "SIH-DEMO-01"}
             </span>
             {siteConfig?.site_name ?? "live sensor and alert status"}
           </p>
@@ -466,6 +468,8 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      <InsarEvidenceCard />
 
       {/* Secondary detail - supporting the hero, never competing with it */}
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

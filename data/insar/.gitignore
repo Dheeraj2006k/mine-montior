@@ -1,0 +1,7 @@
+# Redistribution permission for the production InSAR handoff files is not
+# confirmed (see README.md in this directory and docs/DATA_PROVENANCE.md).
+# Ignore everything here except this file and README.md, so a real handoff
+# placed locally for testing is never accidentally committed.
+*
+!.gitignore
+!README.md

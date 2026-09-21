@@ -22,6 +22,7 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug
@@ -29,9 +30,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+*.tmp
+tmp/
+temp/
 
-# env files (can opt-in for committing if needed)
+# env files - .env.example is a template, not a secret, and is tracked
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +45,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python (tools/insar-importer) - it also has its own local .gitignore;
+# repeated here defensively in case another Python tool is added later.
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/

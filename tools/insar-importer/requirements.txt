@@ -1,0 +1,4 @@
+pyproj==3.8.0
+shapely==2.1.2
+requests==2.34.2
+pytest==9.1.1

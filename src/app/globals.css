@@ -27,11 +27,81 @@
   --stale: #f28b4d;
   --offline: #ef5a5a;
 
+  /* InSAR LOS displacement - a dedicated diverging scientific colormap
+     (ColorBrewer RdBu-style), deliberately NOT reusing --normal/--warning/
+     --offline: those mean sensor health/risk, this means measured
+     direction/magnitude of line-of-sight motion and must never be read as
+     a risk judgement. Rendered on top of the (theme-independent) raster
+     basemap, so these stay identical between dark/light blocks - both are
+     defined explicitly anyway so a future adjustment has a clear seam. */
+  --insar-neg-strong: #2166ac;
+  --insar-neg: #67a9cf;
+  --insar-neutral: #f7f7f7;
+  --insar-pos: #ef8a62;
+  --insar-pos-strong: #b2182b;
+  --insar-no-data: #9aa0a6;
+
   --background: var(--bg);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --radius: 10px;
+}
+
+/* Light theme - explicit opt-in only (data-theme="light" on <html>, set by
+   ThemeToggle and persisted to localStorage). Dark stays the unconditional
+   default above so nothing about today's look changes unless a user
+   deliberately switches - this codebase has never been visually verified
+   in a light context, so every token below was chosen for contrast against
+   a white/near-white surface, not copied from the dark values. Status
+   colors (--normal/--warning/--unknown/--stale/--offline) are used
+   directly as text/icon color throughout the app (badges, map markers),
+   so they are darkened here specifically to keep ~4.5:1 contrast on a
+   light background - the dark-mode values would fail contrast on white. */
+:root[data-theme="light"] {
+  --bg: #f4f6f8;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef1f4;
+  --surface-hover: #e2e7ec;
+  --border: #d8dee4;
+  --border-strong: #b7c1cb;
+
+  --foreground: #10161c;
+  --muted: #48545e;
+  --faint: #6b7a86;
+
+  --deep-blue: #0b2d4d;
+  --teal-blue: #0e7490;
+  --green: #15803d;
+  --light-green: #4d7c0f;
+  --accent: #0e7490;
+  --accent-strong: #0891b2;
+  --accent-soft: #cffafe;
+
+  /* Status colors: known-contrast Tailwind 700/800-range shades (~4.5:1+
+     on white), not estimated - these render as text/icon color directly,
+     e.g. .badge-normal { color: var(--normal) }, so they must clear AA on
+     their own, unlike the brighter dark-mode values which only need to
+     read against a near-black surface. */
+  --normal: #15803d;
+  --warning: #92400e;
+  --unknown: #475569;
+  --stale: #9a3412;
+  --offline: #b91c1c;
+
+  /* Same diverging InSAR scale as dark mode - see note above :root's copy.
+     Kept as its own explicit block (not just inherited) so it can be
+     retuned for light-mode contrast independently if ever needed. */
+  --insar-neg-strong: #2166ac;
+  --insar-neg: #67a9cf;
+  --insar-neutral: #ececec;
+  --insar-pos: #ef8a62;
+  --insar-pos-strong: #b2182b;
+  --insar-no-data: #7a828a;
+
+  --shadow-sm: 0 1px 2px rgba(16, 22, 28, 0.08);
+  --shadow-md: 0 4px 16px rgba(16, 22, 28, 0.1);
 }
 
 @theme inline {

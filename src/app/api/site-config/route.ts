@@ -2,8 +2,7 @@ import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
 import { siteConfigSchema } from "@/lib/schemas/site-config";
 import { requireRole } from "@/lib/auth/roles";
-
-const SITE_ID = "SIH-DEMO-01";
+import { DEMO_SITE_ID as SITE_ID } from "@/lib/config/site";
 
 // Postgres "relation does not exist" - means migration 0004 hasn't been
 // applied to this project yet. Treated as an honest "not configured" state

@@ -1,124 +1,193 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api/client";
-import { LosDisplacementLabel, SinglePairLabel, NoDataLegend } from "@/components/labels";
+import { MineMap, type MapNode } from "@/components/map/mine-map";
+import { useInsarPairOptions } from "@/components/map/use-insar-pair-options";
+import { LosDisplacementLabel } from "@/components/labels";
+import type { HealthState } from "@/lib/domain/node-health";
+import type { InsarGridObservationProperties } from "@/lib/insar-grid/types";
+import { useInsarFullPair } from "./use-insar-full-pair";
+import { InsarPairFilterBar } from "./insar-pair-filter-bar";
+import { InsarCellDetailPanel } from "./insar-cell-detail-panel";
+import { InsarSummary } from "./insar-summary";
+import { InsarLosHistogramChart, InsarCoherenceHistogramChart } from "./insar-charts";
+import { computeInsarPairSummary, buildLosHistogram, buildCoherenceHistogram } from "./insar-analysis-utils";
 
-type InsarLayer = {
-  site_id: string;
-  acquisition_dates: { from: string; to: string } | null;
-  bbox: [number, number, number, number] | null;
-  crs: string | null;
-  coherence_threshold: number;
-  available: boolean;
-};
-
-type InsarNodeFeature = {
+type NodeRow = {
   node_id: number;
-  insar_los_velocity_mm: number | null;
-  insar_coherence: number | null;
-  no_data: boolean;
-  raster_date: string;
+  label: string;
+  mock_latitude: number;
+  mock_longitude: number;
+  is_mock: boolean;
+  latest_risk_score: number | null;
+  health_state: HealthState;
 };
 
-type NodeRow = { node_id: number; label: string };
+type SiteConfigRow = {
+  mine_type: "longwall" | "bord_and_pillar";
+  aoi_latitude: number | null;
+  aoi_longitude: number | null;
+} | null;
 
-export default function InsarPage() {
-  const layerQuery = useQuery({
-    queryKey: ["insar-layer"],
-    queryFn: () => apiGet<InsarLayer>("/api/insar/layer"),
-  });
-  const nodesFeatureQuery = useQuery({
-    queryKey: ["insar-nodes"],
-    queryFn: () => apiGet<InsarNodeFeature[]>("/api/insar/nodes"),
-  });
+function parseCoherenceInput(raw: string): number | undefined {
+  if (raw.trim() === "") return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+export default function InsarAnalysisPage() {
+  const [selectedPair, setSelectedPair] = useState(1);
+  const [selectedCell, setSelectedCell] = useState<InsarGridObservationProperties | null>(null);
+  const [coherenceMinInput, setCoherenceMinInput] = useState("");
+  const [coherenceMaxInput, setCoherenceMaxInput] = useState("");
+
+  const pairOptions = useInsarPairOptions(true);
+
+  const coherenceMin = parseCoherenceInput(coherenceMinInput);
+  const coherenceMax = parseCoherenceInput(coherenceMaxInput);
+  const gridQuery = useInsarFullPair(selectedPair, coherenceMin, coherenceMax);
+
   const nodesQuery = useQuery({
     queryKey: ["nodes"],
     queryFn: () => apiGet<NodeRow[]>("/api/nodes"),
   });
+  const siteConfigQuery = useQuery({
+    queryKey: ["site-config"],
+    queryFn: () => apiGet<SiteConfigRow>("/api/site-config"),
+  });
 
-  const layer = layerQuery.data?.data;
-  const features = nodesFeatureQuery.data?.data ?? [];
-  const nodeLabelById = new Map((nodesQuery.data?.data ?? []).map((n) => [n.node_id, n.label]));
+  const featureCollection = gridQuery.data ?? null;
+  const features = featureCollection?.features ?? [];
+  const nodes = nodesQuery.data?.data ?? [];
+  const siteConfig = siteConfigQuery.data?.data ?? null;
+
+  const mapNodes: MapNode[] = nodes.map((n) => ({
+    node_id: n.node_id,
+    label: n.label,
+    mock_latitude: n.mock_latitude,
+    mock_longitude: n.mock_longitude,
+    health_state: n.health_state,
+    latest_risk_score: n.latest_risk_score,
+    is_mock: n.is_mock,
+  }));
+
+  function handleSelectPair(pair: number) {
+    setSelectedPair(pair);
+    setSelectedCell(null);
+  }
+
+  function handleSelectCell(gridId: number) {
+    const feature = features.find((f) => f.properties.grid_id === gridId);
+    setSelectedCell(feature?.properties ?? null);
+  }
+
+  const summary = computeInsarPairSummary(selectedPair, features);
+  const losBuckets = buildLosHistogram(features);
+  const coherenceBuckets = buildCoherenceHistogram(features);
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-lg font-semibold">InSAR</h1>
+          <h1 className="text-lg font-semibold">InSAR Evidence</h1>
           <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>
-            Satellite line-of-sight displacement - never automatically vertical subsidence.
+            Satellite-derived ground motion evidence
           </p>
         </div>
-        <LosDisplacementLabel />
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className="text-[11px] px-2 py-1 rounded-full"
+            style={{ color: "var(--muted)", background: "var(--surface-2)", border: "1px solid var(--border)" }}
+          >
+            Supplementary evidence &mdash; not a standalone alert trigger
+          </span>
+          <LosDisplacementLabel />
+        </div>
       </div>
 
-      <section className="panel p-4 md:p-5 flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Acquisition</h2>
-        {!layer || !layer.available ? (
-          <div className="flex flex-col gap-1">
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Waiting for satellite observation&hellip;
-            </p>
-            <p className="text-xs" style={{ color: "var(--faint)" }}>
-              No InSAR observation available yet - the InSAR team hasn&apos;t populated a raster for
-              this site. This is an honest empty state, not a placeholder.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <SinglePairLabel from={layer.acquisition_dates?.from ?? null} to={layer.acquisition_dates?.to ?? null} />
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="panel-2 rounded-lg p-3">
-                <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>Coherence threshold</div>
-                <div className="text-sm mt-0.5 font-mono">{layer.coherence_threshold}</div>
-              </div>
-              <div className="panel-2 rounded-lg p-3">
-                <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>CRS</div>
-                <div className="text-sm mt-0.5 font-mono">{layer.crs ?? "—"}</div>
-              </div>
-              <div className="panel-2 rounded-lg p-3">
-                <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>Bounding box</div>
-                <div className="text-sm mt-0.5 font-mono">{layer.bbox ? layer.bbox.join(", ") : "—"}</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
+      <InsarPairFilterBar
+        options={pairOptions.options}
+        optionsLoading={pairOptions.isLoading}
+        selectedPair={selectedPair}
+        onSelectPair={handleSelectPair}
+        coherenceMin={coherenceMinInput}
+        coherenceMax={coherenceMaxInput}
+        onCoherenceMinChange={setCoherenceMinInput}
+        onCoherenceMaxChange={setCoherenceMaxInput}
+      />
 
-      <section className="panel overflow-hidden">
-        <div className="px-4 md:px-5 py-3.5 flex items-center justify-between border-b" style={{ borderColor: "var(--border)" }}>
-          <h2 className="text-sm font-semibold">Per-node LOS displacement</h2>
-          <NoDataLegend />
-        </div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Node</th>
-              <th>LOS displacement (mm)</th>
-              <th>Coherence</th>
-              <th>Raster date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {features.map((f) => (
-              <tr key={f.node_id}>
-                <td className="font-medium">{nodeLabelById.get(f.node_id) ?? `Node ${f.node_id}`}</td>
-                <td style={{ color: f.no_data ? "var(--faint)" : "var(--foreground)" }}>
-                  {f.no_data ? "no data (low coherence)" : f.insar_los_velocity_mm != null ? f.insar_los_velocity_mm.toFixed(2) : "—"}
-                </td>
-                <td style={{ color: "var(--muted)" }}>{f.insar_coherence != null ? f.insar_coherence.toFixed(2) : "—"}</td>
-                <td style={{ color: "var(--muted)" }}>{f.raster_date}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {features.length === 0 && !nodesFeatureQuery.isLoading && (
-          <p className="px-4 md:px-5 py-6 text-sm" style={{ color: "var(--muted)" }}>
-            No InSAR node features ingested yet.
-          </p>
-        )}
-      </section>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4">
+        <section className="panel overflow-hidden">
+          {gridQuery.isError ? (
+            <div className="p-5">
+              <p className="text-sm" style={{ color: "var(--offline)" }}>
+                Unable to load InSAR evidence.
+              </p>
+            </div>
+          ) : gridQuery.isLoading ? (
+            <div className="p-5">
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                Loading InSAR evidence&hellip;
+              </p>
+            </div>
+          ) : (
+            <MineMap
+              nodes={mapNodes}
+              mineType={siteConfig?.mine_type ?? null}
+              aoi={
+                siteConfig?.aoi_latitude != null && siteConfig?.aoi_longitude != null
+                  ? { latitude: siteConfig.aoi_latitude, longitude: siteConfig.aoi_longitude }
+                  : null
+              }
+              heightClassName="h-[520px]"
+              insar={{
+                enabled: true,
+                featureCollection,
+                selectedGridId: selectedCell?.grid_id ?? null,
+                onSelectCell: handleSelectCell,
+                fitBoundsOnLoad: true,
+              }}
+            />
+          )}
+          {!gridQuery.isLoading && !gridQuery.isError && features.length === 0 && (
+            <p className="px-4 md:px-5 py-3 text-xs border-t" style={{ color: "var(--faint)", borderColor: "var(--border)" }}>
+              No grid cells match the current filter for this pair.
+            </p>
+          )}
+        </section>
+
+        <InsarCellDetailPanel cell={selectedCell} />
+      </div>
+
+      {gridQuery.isError ? null : gridQuery.isLoading ? (
+        <p className="text-sm" style={{ color: "var(--muted)" }}>
+          Loading InSAR evidence&hellip;
+        </p>
+      ) : (
+        <>
+          <InsarSummary summary={summary} />
+
+          {summary.lowCoherenceCount > 0 && (
+            <p className="text-xs px-1" style={{ color: "var(--faint)" }}>
+              Low coherence cells contain reduced-quality InSAR evidence - shown de-emphasized on the map,
+              not treated as stable or zero movement.
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <section className="panel p-4 md:p-5">
+              <h2 className="text-sm font-semibold mb-2">LOS displacement distribution</h2>
+              <InsarLosHistogramChart buckets={losBuckets} />
+            </section>
+            <section className="panel p-4 md:p-5">
+              <h2 className="text-sm font-semibold mb-2">Coherence distribution</h2>
+              <InsarCoherenceHistogramChart buckets={coherenceBuckets} />
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

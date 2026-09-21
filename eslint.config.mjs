@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "tools/insar-importer/.venv/**",
+    "tools/insar-importer/.pytest_cache/**",
+    "tools/insar-importer/**/__pycache__/**",
   ]),
 ]);
 

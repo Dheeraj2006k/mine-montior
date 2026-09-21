@@ -6,7 +6,14 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { apiGet } from "@/lib/api/client";
 import { MockPositionLabel } from "@/components/labels";
-import { RiskBadge } from "@/components/status/risk-badge";
+import { IllustrativeSusceptibilityBadge } from "@/components/twin/illustrative-susceptibility-badge";
+import { ViewModeToggle, useViewMode } from "@/components/view-mode/view-mode-context";
+import {
+  clampExtractionPct,
+  deriveIllustrativeSusceptibility,
+  deriveHypotheticalScrub,
+  formatConfiguredValue,
+} from "./twin-demo-logic";
 import type { HealthState } from "@/lib/domain/node-health";
 import type { PredictedZoneEntry, TwinNode } from "@/components/twin/twin-scene";
 
@@ -36,10 +43,14 @@ type PredictionData = {
 type SiteConfigData = {
   mine_type: "longwall" | "bord_and_pillar";
   geometry: Record<string, unknown>;
+  geology: Record<string, unknown>;
   mining_state: Record<string, unknown>;
+  data_sources: Record<string, unknown>;
+  is_assumed: Record<string, boolean>;
 } | null;
 
 export default function TwinPage() {
+  const { mode: viewMode } = useViewMode();
   const [scrubT, setScrubT] = useState(1);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [planningMode, setPlanningMode] = useState(false);
@@ -82,19 +93,20 @@ export default function TwinPage() {
     ? Math.max(...nodesQuery.data.data.map((n) => n.latest_risk_score ?? 0))
     : null;
   // Illustrative only - combines a real live risk score with a real
-  // configured/slider extraction % via a simple, explicitly-labeled
-  // formula. Not a validated PHSR/CPHSR structural model - none exists in
-  // this codebase yet (no such adapter, no such data source).
-  const combinedIllustrativeIndicator =
-    maxLiveRisk != null ? Math.min(1, maxLiveRisk * 0.7 + (effectiveExtractionPct / 100) * 0.3) : null;
+  // configured/slider extraction % via a simple, explicitly-labeled,
+  // pure formula (twin-demo-logic.ts). Not a validated PHSR/CPHSR
+  // structural model - none exists in this codebase.
+  const combinedIllustrativeIndicator = deriveIllustrativeSusceptibility({
+    maxLiveRisk,
+    extractionPct: effectiveExtractionPct,
+  });
 
   // Planning mode extrapolates the existing real predicted_zone severities
   // forward by a user-chosen number of days - still driven entirely by
   // real model output, just scaled, and always visually and textually
   // labeled hypothetical (PRD-2 §4: "rendered result visually distinct...
   // and labeled 'Hypothetical'").
-  const hypotheticalMultiplier = 1 + Math.min(1, hypotheticalDays / 30) * 0.6;
-  const effectiveScrubT = mineType === "longwall" && planningMode ? Math.min(1, scrubT * hypotheticalMultiplier) : scrubT;
+  const effectiveScrubT = deriveHypotheticalScrub({ scrubT, hypotheticalDays, planningMode, mineType });
 
   if (reduceMotion) {
     return (
@@ -105,6 +117,7 @@ export default function TwinPage() {
             Enable 3D view
           </button>
         </div>
+        <IllustrativeModelBanner />
         <p className="text-sm" style={{ color: "var(--muted)" }}>
           Reduced-motion mode is on. Every fact reachable here is also reachable on{" "}
           <Link href="/nodes" className="underline">
@@ -133,7 +146,8 @@ export default function TwinPage() {
             <MockPositionLabel />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <ViewModeToggle />
           {mineType === "longwall" && (
             <div className="inline-flex items-center rounded-full p-0.5 text-xs font-medium" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
               {(["monitoring", "planning"] as const).map((m) => (
@@ -158,12 +172,13 @@ export default function TwinPage() {
         </div>
       </div>
 
-      <div className="label-caveat">
-        Predicted deformation (model output - not observed). model_version:{" "}
-        {prediction?.model_version ?? "-"} - confidence:{" "}
-        {prediction?.time_to_threshold.confidence ?? "-"}
-        {prediction?.is_stale && " - STALE"}
-      </div>
+      <IllustrativeModelBanner />
+
+      <PredictionMetadataBar
+        modelVersion={prediction?.model_version ?? null}
+        confidence={prediction?.time_to_threshold.confidence ?? null}
+        isStale={prediction?.is_stale ?? false}
+      />
 
       {!hasPrediction && mineType === "longwall" && (
         <p className="text-xs" style={{ color: "var(--faint)" }}>
@@ -171,6 +186,27 @@ export default function TwinPage() {
           below is intentionally flat. Flat is not a claim of zero risk; it means no prediction
           exists to render.
         </p>
+      )}
+
+      {mineType === "longwall" && viewMode === "technical" && (
+        <div className="panel p-4 flex flex-col gap-2">
+          <span className="text-sm font-semibold">Configured longwall geometry</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <GeologyFact label="Depth" value={siteConfig?.geometry?.depth_m as number | undefined} unit="m" assumed={siteConfig?.is_assumed?.depth_m} />
+            <GeologyFact
+              label="Extraction thickness"
+              value={siteConfig?.geometry?.extraction_thickness_m as number | undefined}
+              unit="m"
+              assumed={siteConfig?.is_assumed?.extraction_thickness_m}
+            />
+            <GeologyFact label="Extraction method" value={siteConfig?.geometry?.extraction_method as string | undefined} assumed={siteConfig?.is_assumed?.extraction_method} />
+            <GeologyFact label="Status" value={siteConfig?.geometry?.status as string | undefined} assumed={siteConfig?.is_assumed?.status} />
+          </div>
+          <p className="text-[11px]" style={{ color: "var(--faint)" }}>
+            From site setup - reused as configured, never fabricated. Values marked &quot;assumed&quot; were
+            entered as placeholders during onboarding, not surveyed.
+          </p>
+        </div>
       )}
 
       {mineType === "longwall" && planningMode && (
@@ -196,7 +232,7 @@ export default function TwinPage() {
         <div className="panel p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-sm font-semibold">Structural susceptibility context</span>
-            <span className="label-caveat">PHSR/CPHSR not available - no structural model integrated yet</span>
+            <span className="label-caveat">PHSR / CPHSR baseline - not available as a validated structural model</span>
           </div>
           {pillarWidthM != null && galleryWidthM != null ? (
             <p className="text-xs" style={{ color: "var(--faint)" }}>
@@ -213,31 +249,65 @@ export default function TwinPage() {
             </p>
           )}
           <label className="flex items-center gap-3 text-sm">
-            <span style={{ color: "var(--muted)" }}>Extraction %</span>
+            <span style={{ color: "var(--muted)" }}>Extraction / mining progression</span>
             <input
               type="range"
               min={0}
               max={100}
               value={effectiveExtractionPct}
-              onChange={(e) => setExtractionPct(Number(e.target.value))}
+              onChange={(e) => setExtractionPct(clampExtractionPct(Number(e.target.value)))}
               className="flex-1"
             />
             <span className="font-mono text-xs w-10 text-right">{Math.round(effectiveExtractionPct)}%</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="panel-2 rounded-lg p-3">
-              <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>PHSR (baseline)</div>
-              <div className="text-sm mt-1" style={{ color: "var(--faint)" }}>fixed - not computed</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--faint)" }}>PHSR / CPHSR baseline</div>
+              <div className="text-sm mt-1" style={{ color: "var(--faint)" }}>Illustrative planning baseline - not available as a validated structural model</div>
             </div>
             <div className="panel-2 rounded-lg p-3">
               <div className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--faint)" }}>Combined indicator (illustrative)</div>
-              {combinedIllustrativeIndicator != null ? <RiskBadge score={combinedIllustrativeIndicator} /> : <span className="text-sm" style={{ color: "var(--faint)" }}>-</span>}
+              <IllustrativeSusceptibilityBadge value={combinedIllustrativeIndicator} />
             </div>
           </div>
           <p className="text-[11px]" style={{ color: "var(--faint)" }}>
             The combined indicator blends live node risk with the extraction % slider via a simple,
-            unvalidated formula for demonstration - it is not a structural engineering model.
+            unvalidated formula for demonstration - it is not a structural engineering model and is
+            never written back to operational risk, alerts, predictions, or InSAR.
           </p>
+
+          <div className="flex items-center gap-4 flex-wrap pt-2 mt-1 text-xs" style={{ borderTop: "1px solid var(--border)", color: "var(--muted)" }}>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#7891ad" }} />
+              Pillar (remaining)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#8a5a42", opacity: 0.7 }} />
+              Extracted panel
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#9fb4cc", opacity: 0.6 }} />
+              Roof / overlying strata (illustrative)
+            </span>
+          </div>
+
+          {viewMode === "technical" && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 mt-1" style={{ borderTop: "1px solid var(--border)" }}>
+              <GeologyFact label="Rock-to-soil ratio" value={siteConfig?.geology?.rock_to_soil_ratio as number | undefined} assumed={siteConfig?.is_assumed?.rock_to_soil_ratio} />
+              <GeologyFact label="Brittleness index" value={siteConfig?.geology?.brittleness_index as number | undefined} assumed={siteConfig?.is_assumed?.brittleness_index} />
+              <GeologyFact
+                label="Rock density"
+                value={siteConfig?.geology?.rock_density as number | undefined}
+                unit="kg/m3"
+                assumed={siteConfig?.is_assumed?.rock_density}
+              />
+              {siteConfig?.data_sources?.use_static_geology_fixture === true && (
+                <p className="text-[11px] sm:col-span-3" style={{ color: "var(--faint)" }}>
+                  Geology values are from a static onboarding fixture, not a live geological survey feed.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -277,6 +347,93 @@ export default function TwinPage() {
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// Replaces a single cramped run-on line ("Predicted deformation (model
+// output - not observed). model_version: X - confidence: Y") with a clear
+// primary claim + secondary metadata, visually subordinate to the 3D scene
+// itself (small text, panel-2 background, muted colors). Wording content
+// is unchanged - "Predicted deformation" / "Model output - not observed"
+// - only the layout changed. Never relabels this as measured/observed.
+function PredictionMetadataBar({
+  modelVersion,
+  confidence,
+  isStale,
+}: {
+  modelVersion: string | null;
+  confidence: number | null;
+  isStale: boolean;
+}) {
+  return (
+    <div className="panel-2 rounded-lg px-3.5 py-2.5 flex flex-col gap-2">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-sm font-semibold">Predicted deformation</span>
+        <span className="label-caveat">model output &mdash; not observed</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs" style={{ color: "var(--faint)" }}>
+        <span>
+          Model version <span className="ml-1.5 font-mono" style={{ color: "var(--muted)" }}>{modelVersion ?? "—"}</span>
+        </span>
+        <span>
+          Confidence <span className="ml-1.5 font-mono" style={{ color: "var(--muted)" }}>{confidence ?? "—"}</span>
+        </span>
+        {isStale && (
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+            style={{ color: "var(--warning)", background: "color-mix(in srgb, var(--warning) 14%, transparent)" }}
+          >
+            Status: stale
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Persistent, always-visible - never conditional on view mode or mine type
+// - so this reads as a fixed fact about the page, not a dismissible aside.
+function IllustrativeModelBanner() {
+  return (
+    <div
+      className="rounded-lg px-3 py-2 flex items-center gap-2 text-xs"
+      style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--muted)" }}
+    >
+      <span aria-hidden>&#9678;</span>
+      <span>
+        <strong style={{ color: "var(--foreground)" }}>Illustrative model</strong> &mdash; not a validated
+        physical simulation.
+      </span>
+    </div>
+  );
+}
+
+function GeologyFact({
+  label,
+  value,
+  unit,
+  assumed,
+}: {
+  label: string;
+  value: number | string | undefined;
+  unit?: string;
+  assumed?: boolean;
+}) {
+  return (
+    <div className="panel-2 rounded-lg p-3">
+      <div className="text-[10px] uppercase tracking-wide flex items-center gap-1" style={{ color: "var(--faint)" }}>
+        {label}
+        {assumed === true && (
+          <span
+            className="text-[9px] font-semibold uppercase tracking-wide px-1 py-0.5 rounded"
+            style={{ color: "var(--warning)", background: "color-mix(in srgb, var(--warning) 14%, transparent)" }}
+          >
+            assumed
+          </span>
+        )}
+      </div>
+      <div className="text-sm mt-0.5 font-mono">{formatConfiguredValue(value, unit)}</div>
     </div>
   );
 }

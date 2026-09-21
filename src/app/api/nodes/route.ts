@@ -2,9 +2,9 @@ import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
 import { computeNodeHealth, type ReadingLike } from "@/lib/domain/node-health";
 import { requireRole } from "@/lib/auth/roles";
+import { DEMO_SITE_ID as SITE_ID } from "@/lib/config/site";
 
 const RECENT_WINDOW = 50;
-const SITE_ID = "SIH-DEMO-01";
 
 export async function GET() {
   const { data: nodes, error: nodesError } = await supabaseAdmin

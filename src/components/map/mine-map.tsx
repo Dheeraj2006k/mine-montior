@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { useQuery } from "@tanstack/react-query";
 import type { HealthState } from "@/lib/domain/node-health";
+import { apiGet } from "@/lib/api/client";
+import type { InsarGridFeatureCollection, InsarGridObservationProperties } from "@/lib/insar-grid/types";
+import { InsarGridLayer } from "./insar-grid-layer";
+import { InsarToggle, InsarPairSelector, InsarLegend, InsarCellDetailPanel, InsarStatusBanner } from "./insar-controls";
+import { useInsarPairOptions } from "./use-insar-pair-options";
 
 export type MapNode = {
   node_id: number;
@@ -38,12 +44,37 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
 
 export type Aoi = { latitude: number; longitude: number };
 
+/**
+ * Optional controlled InSAR mode - lets a page (e.g. the dedicated /insar
+ * analysis page) drive the grid layer/selection from its own state (so it
+ * can share the same fetched pair data with a summary/charts/detail panel
+ * laid out as real page sections) instead of MineMap's default
+ * self-contained toggle+overlay behaviour used on the dashboard. When
+ * provided, MineMap does not fetch or manage InSAR state itself - it only
+ * renders the shared layer/legend driven by these values. This is
+ * additive: existing callers that omit this prop are unaffected.
+ */
+export type InsarControl = {
+  enabled: boolean;
+  featureCollection: InsarGridFeatureCollection | null;
+  selectedGridId: number | null;
+  onSelectCell: (gridId: number) => void;
+  /**
+   * Opt-in only (default false) - frame the map to the real grid bounds
+   * whenever a new feature collection loads. Only the dedicated /insar
+   * analysis page should set this; the dashboard's shared sensor map must
+   * never be silently recentered onto the InSAR grid.
+   */
+  fitBoundsOnLoad?: boolean;
+};
+
 export function MineMap({
   nodes,
   aoi,
   mineType,
   onSelectNode,
   heightClassName = "h-96",
+  insar,
 }: {
   nodes: MapNode[];
   aoi?: Aoi | null;
@@ -51,11 +82,39 @@ export function MineMap({
   onSelectNode?: (nodeId: number) => void;
   /** Tailwind height class - lets the map be the dashboard centerpiece without changing map logic. */
   heightClassName?: string;
+  /** Controlled InSAR mode - see InsarControl. Omit for the default self-contained dashboard behaviour. */
+  insar?: InsarControl;
 }) {
+  const controlled = insar != null;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const aoiMarkerRef = useRef<maplibregl.Marker | null>(null);
+  // Mirrors mapRef in React state (refs alone don't trigger re-renders) so
+  // the InSAR layer - a real React component that needs the map instance
+  // as a prop to know when to attach - can mount at the right time.
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
+
+  // InSAR evidence layer: off by default, self-contained (no new required
+  // props on MineMap), so every existing call site gets this "for free".
+  // See Phase 7 spec: this must never feed operational risk/alerts, and
+  // must never be implemented as a dashboard-specific integration.
+  const [insarEnabled, setInsarEnabled] = useState(false);
+  const [selectedPair, setSelectedPair] = useState<number>(1);
+  const [selectedCell, setSelectedCell] = useState<InsarGridObservationProperties | null>(null);
+
+  const pairOptions = useInsarPairOptions(!controlled && insarEnabled);
+  const insarGridQuery = useQuery({
+    queryKey: ["insar-grid", selectedPair],
+    queryFn: () => apiGet<InsarGridFeatureCollection>(`/api/insar/grid?pair=${selectedPair}`),
+    enabled: !controlled && insarEnabled,
+  });
+  const internalFeatureCollection = insarGridQuery.data?.data ?? null;
+
+  const effectiveInsarEnabled = controlled ? insar.enabled : insarEnabled;
+  const effectiveFeatureCollection = controlled ? insar.featureCollection : internalFeatureCollection;
+  const effectiveSelectedGridId = controlled ? insar.selectedGridId : selectedCell?.grid_id ?? null;
+  const effectiveOnSelectCell = controlled ? insar.onSelectCell : (gridId: number) => handleSelectInsarCell(gridId);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -76,6 +135,7 @@ export function MineMap({
       zoom: 15,
     });
     mapRef.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    setMapInstance(mapRef.current);
 
     // MapLibre measures its container at construction time; in a flex
     // layout the container can still be mid-resize then, leaving the map
@@ -87,6 +147,7 @@ export function MineMap({
       resizeObserver.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
+      setMapInstance(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -154,9 +215,54 @@ export function MineMap({
       .addTo(map);
   }, [aoi, mineType]);
 
+  function handleSelectInsarCell(gridId: number) {
+    const feature = internalFeatureCollection?.features.find((f) => f.properties.grid_id === gridId);
+    setSelectedCell(feature?.properties ?? null);
+  }
+
+  function handleSelectPair(pair: number) {
+    setSelectedPair(pair);
+    setSelectedCell(null);
+  }
+
+  function handleToggleInsar() {
+    setInsarEnabled((v) => {
+      if (v) setSelectedCell(null);
+      return !v;
+    });
+  }
+
   return (
     <div className="relative">
       <div ref={containerRef} className={`w-full ${heightClassName} rounded-lg overflow-hidden`} />
+      <InsarGridLayer
+        map={mapInstance}
+        featureCollection={effectiveInsarEnabled ? effectiveFeatureCollection : null}
+        selectedGridId={effectiveSelectedGridId}
+        onSelectCell={effectiveOnSelectCell}
+        fitBoundsOnLoad={controlled ? (insar.fitBoundsOnLoad ?? false) : false}
+      />
+      {!controlled && <InsarToggle enabled={insarEnabled} onToggle={handleToggleInsar} />}
+      {effectiveInsarEnabled && (
+        <>
+          {!controlled && (
+            <>
+              <InsarPairSelector
+                options={pairOptions.options}
+                loading={pairOptions.isLoading}
+                selectedPair={selectedPair}
+                onSelectPair={handleSelectPair}
+              />
+              <InsarStatusBanner
+                loading={insarGridQuery.isLoading}
+                error={insarGridQuery.isError ? (insarGridQuery.error as Error).message : null}
+              />
+              {selectedCell && <InsarCellDetailPanel cell={selectedCell} onClose={() => setSelectedCell(null)} />}
+            </>
+          )}
+          <InsarLegend />
+        </>
+      )}
       {mineType && (
         <span
           className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full z-10"

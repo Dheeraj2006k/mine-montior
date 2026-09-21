@@ -29,6 +29,14 @@ Adapted from the implementation plan §20. The scenario library and dashboard ex
 Network dies → nothing here needs the internet except Supabase itself and (if configured) real Resend/Twilio calls. With `DEMO_MODE` (auto-on when no provider credentials are set), notifications/voice keep working locally with simulated sends — say so out loud if it comes up. A dead Supabase connection is not currently covered by a local fallback; if that's a real risk for your venue, that's the next thing to build, not something already handled.
 
 ## What's genuinely NOT rehearsal-ready yet
-- No auth/role gating — every admin page is reachable by anyone with the URL. Fine for a controlled demo, not for anything public.
+- Auth/role gating now exists (Supabase Auth + viewer/operator/admin roles,
+  enforced server-side — see `src/middleware.ts` and
+  `src/lib/auth/roles.ts`), but has not been rehearsed as part of a live
+  demo run-through — confirm your demo account's role can reach every
+  page you plan to show, ahead of time.
 - Real voice/SMS/email requires you to add provider credentials and test them yourself (this pass verified the demo-mode code path, not a real phone ringing).
 - No accessibility/colour-blind/projector-legibility pass has been done — do this visually yourself before the actual day.
+
+See `docs/DEMO_GUIDE.md` for the up-to-date feature tour, including InSAR
+analysis, the Data Monitor, and the Twin — none of which existed when
+this runbook was first written.

@@ -93,6 +93,16 @@ export function SatelliteIcon({ size = 17 }: IconProps) {
   );
 }
 
+export function DatabaseIcon({ size = 17 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...common}>
+      <ellipse cx="12" cy="5.5" rx="8" ry="2.8" />
+      <path d="M4 5.5v13c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8v-13" />
+      <path d="M4 12c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8" />
+    </svg>
+  );
+}
+
 export function GearIcon({ size = 17 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...common}>
