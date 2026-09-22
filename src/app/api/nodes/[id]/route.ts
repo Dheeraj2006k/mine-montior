@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
 import { computeNodeHealth, type ReadingLike } from "@/lib/domain/node-health";
 import { findBaselineReading } from "@/lib/domain/node-baseline";
+import { requireRole } from "@/lib/auth/roles";
 
 const RECENT_WINDOW = 50;
 
@@ -31,6 +32,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { id } = await params;
   const nodeId = Number(id);
 

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
-import { requireRole } from "@/lib/auth/roles";
+import { getCurrentUserRole, requireRole } from "@/lib/auth/roles";
 
 export async function POST(
   request: Request,
@@ -41,8 +41,11 @@ export async function POST(
     return fail("DATABASE_ERROR", "Failed to resolve alert", [{ issue: error?.message }], 500);
   }
 
+  const actor = await getCurrentUserRole();
+  const { data: actorUser } = await supabaseAdmin.auth.admin.getUserById(actor.userId!);
   await supabaseAdmin.from("audit_log").insert({
-    actor: "operator:dashboard",
+    actor: actorUser?.user?.email ? `${actor.role}:${actorUser.user.email}` : `${actor.role}:${actor.userId}`,
+    actor_user_id: actor.userId,
     action: "resolve",
     entity_table: "alerts",
     entity_id: String(alertId),

@@ -1,7 +1,11 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 export async function GET(request: Request) {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const state = searchParams.get("state");
   const from = searchParams.get("from");

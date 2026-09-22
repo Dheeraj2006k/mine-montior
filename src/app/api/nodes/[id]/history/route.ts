@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 const MAX_POINTS = 2000;
 const FETCH_CAP = 10000;
@@ -14,6 +15,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { id } = await params;
   const nodeId = Number(id);
 

@@ -34,7 +34,44 @@ live, instead of starting from a pre-loaded "Normal" state.
 `/login` - Supabase Auth email/password. Every page below except
 `/login`/`/signup` requires a session (`src/middleware.ts`); role
 (`viewer`/`operator`/`admin`) gates specific actions server-side, not
-just in the UI.
+just in the UI. A deactivated account is signed out and redirected back to
+`/login` with a clear message, even mid-session.
+
+**Demo admin login** (run `npm run seed:admin` once against your Supabase
+project first):
+
+```
+Email:    admin@iris.local
+Password: test123
+```
+
+**LOCAL/DEMO ONLY** - these are the documented default bootstrap
+credentials (`tools/seed-admin.mjs`, overridable via `IRIS_ADMIN_EMAIL`/
+`IRIS_ADMIN_PASSWORD`). Never rely on these defaults for a real
+deployment; set both env vars to real, unique values there.
+
+**New user registration** - sign up at `/signup` with any email. The
+account is created with `role = viewer` automatically (a database trigger
+on `auth.users`, not client-side logic) - read-only monitoring access
+only, no admin/operator UI to accidentally grant a higher role at signup.
+An admin can promote the account afterward from `/admin/users`.
+
+### Admin Control Center (`/admin/*`, admin role required)
+
+- **Users** (`/admin/users`) - every registered user, role, active/
+  inactive status, assigned site, created/last-login dates. Change role,
+  deactivate/reactivate, or reset a user's role back to viewer - each a
+  confirmed, audited action.
+- **Role & access** (`/admin/roles`) - what viewer/operator/admin can and
+  cannot do, in one place.
+- **Site ownership** (`/admin/ownership`) - current owner, assigned users,
+  and a confirmed ownership transfer flow (current owner -> new owner).
+- **Audit** (`/admin/audit`) - every role change, activation/
+  deactivation, role reset, and ownership transfer, with actor, target,
+  and before/after state.
+- Contacts, notification log, blast schedule, and site setup remain where
+  they were - now each gated server-side (redirects a non-admin away
+  before the page even renders), not just hidden from the nav.
 
 ## 1. Dashboard (`/dashboard`)
 

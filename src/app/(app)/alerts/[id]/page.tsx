@@ -4,6 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api/client";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 type PipelineTraceRow = {
   stage: string;
@@ -41,6 +42,10 @@ const TRACE_STATUS_COLOR: Record<string, string> = {
 export default function AlertDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const queryClient = useQueryClient();
+  const { can, isLoading: roleLoading } = useCurrentUser();
+  // While the role hasn't loaded yet, don't flash enabled buttons a viewer
+  // will only have rejected server-side a moment later.
+  const canOperate = roleLoading ? false : can("operator");
   const query = useQuery({
     queryKey: ["alert", id],
     queryFn: () => apiGet<AlertDetail>(`/api/alerts/${id}`),
@@ -83,25 +88,59 @@ export default function AlertDetailPage({ params }: { params: Promise<{ id: stri
           </p>
         </div>
         {alert.state === "new" || alert.state === "notified" ? (
-          <div className="flex gap-2">
-            <button className="btn" onClick={() => action.mutate("acknowledge")} disabled={action.isPending}>
-              Acknowledge
-            </button>
-            <button className="btn" onClick={() => action.mutate("resolve")} disabled={action.isPending}>
-              Resolve
-            </button>
-            <button className="btn btn-danger" onClick={() => action.mutate("dismiss")} disabled={action.isPending}>
-              Dismiss
-            </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex gap-2">
+              <button
+                className="btn"
+                onClick={() => action.mutate("acknowledge")}
+                disabled={!canOperate || action.isPending}
+                title={canOperate ? undefined : "Requires operator access"}
+              >
+                Acknowledge
+              </button>
+              <button
+                className="btn"
+                onClick={() => action.mutate("resolve")}
+                disabled={!canOperate || action.isPending}
+                title={canOperate ? undefined : "Requires operator access"}
+              >
+                Resolve
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => action.mutate("dismiss")}
+                disabled={!canOperate || action.isPending}
+                title={canOperate ? undefined : "Requires operator access"}
+              >
+                Dismiss
+              </button>
+            </div>
+            {!roleLoading && !canOperate && (
+              <span className="text-[11px]" style={{ color: "var(--faint)" }}>
+                Read-only - operator access required to act on alerts
+              </span>
+            )}
           </div>
         ) : alert.state === "acknowledged" ? (
-          <button className="btn btn-primary" onClick={() => action.mutate("resolve")} disabled={action.isPending}>
-            Resolve
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              className="btn btn-primary"
+              onClick={() => action.mutate("resolve")}
+              disabled={!canOperate || action.isPending}
+              title={canOperate ? undefined : "Requires operator access"}
+            >
+              Resolve
+            </button>
+            {!roleLoading && !canOperate && (
+              <span className="text-[11px]" style={{ color: "var(--faint)" }}>
+                Read-only - operator access required to act on alerts
+              </span>
+            )}
+          </div>
         ) : null}
       </div>
 
-      {(alert.state === "new" || alert.state === "notified") && (
+      {canOperate && (alert.state === "new" || alert.state === "notified") && (
         <SimulateIvr alertId={id} onDone={() => queryClient.invalidateQueries({ queryKey: ["alert", id] })} />
       )}
 

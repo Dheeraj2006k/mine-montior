@@ -9,6 +9,7 @@ import { RiskBadge } from "@/components/status/risk-badge";
 import { SourceBadge } from "@/components/status/source-badge";
 import { MockPositionLabel } from "@/components/labels";
 import type { HealthState } from "@/lib/domain/node-health";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 type NodeRow = {
   node_id: number;
@@ -145,6 +146,8 @@ const HEALTH_FILTERS = ["all", "normal", "warning", "unknown", "stale", "offline
 
 export default function NodesPage() {
   const queryClient = useQueryClient();
+  const { can, isLoading: roleLoading } = useCurrentUser();
+  const canOperate = !roleLoading && can("operator");
   const query = useQuery({
     queryKey: ["nodes"],
     queryFn: () => apiGet<NodeRow[]>("/api/nodes"),
@@ -181,7 +184,15 @@ export default function NodesPage() {
         </div>
       </div>
 
-      <RegisterNodePanel onRegistered={() => queryClient.invalidateQueries({ queryKey: ["nodes"] })} />
+      {canOperate ? (
+        <RegisterNodePanel onRegistered={() => queryClient.invalidateQueries({ queryKey: ["nodes"] })} />
+      ) : (
+        !roleLoading && (
+          <p className="text-xs" style={{ color: "var(--faint)" }}>
+            Read-only - operator access required to register nodes
+          </p>
+        )
+      )}
 
       <div className="flex items-center gap-2.5 flex-wrap">
         <input className="input flex-1 min-w-45" placeholder="Search nodes..." value={search} onChange={(e) => setSearch(e.target.value)} />

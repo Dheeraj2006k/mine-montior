@@ -1,7 +1,13 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
+// Contacts/notifications hold PII (0002_rls_policies.sql) - admin only,
+// matching the /admin/notifications page's nav gating.
 export async function GET() {
+  const denied = await requireRole("admin");
+  if (denied) return denied;
+
   const { data, error } = await supabaseAdmin
     .from("notifications")
     .select("*, contacts(full_name)")

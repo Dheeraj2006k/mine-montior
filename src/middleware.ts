@@ -45,6 +45,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Deactivated accounts are denied application access regardless of role,
+  // even though their Supabase Auth session is still technically valid -
+  // see src/lib/auth/roles.ts. Uses the request's own session-bound client
+  // (RLS policy self_select_profile), not the service-role client, so this
+  // check costs no extra credential and can't be spoofed via headers.
+  if (isProtectedPath(pathname) && user) {
+    const { data: profile } = await supabase.from("profiles").select("status").eq("user_id", user.id).maybeSingle();
+    if (profile?.status === "inactive") {
+      await supabase.auth.signOut();
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("error", "inactive");
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if ((pathname === "/login" || pathname === "/signup") && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }

@@ -3,6 +3,7 @@ import { ok, fail } from "@/lib/api/envelope";
 import { cellCoherenceQuality, toDisplacementMm } from "@/lib/insar-grid/coherence";
 import type { InsarGridFeature, InsarGridFeatureCollection } from "@/lib/insar-grid/types";
 import { DEMO_SITE_ID as SITE_ID } from "@/lib/config/site";
+import { requireRole } from "@/lib/auth/roles";
 
 const DEFAULT_LIMIT = 500;
 const MAX_LIMIT = 1000;
@@ -12,6 +13,9 @@ const MAX_LIMIT = 1000;
 // the tables are empty or the query fails, this returns an honest empty
 // FeatureCollection or a real error, never fabricated rows.
 export async function GET(request: Request) {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
 
   const pairParam = searchParams.get("pair");

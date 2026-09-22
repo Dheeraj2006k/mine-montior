@@ -15,17 +15,26 @@ export async function GET() {
     return fail("AUTH_ERROR", "Failed to list users", [{ issue: usersError.message }], 500);
   }
 
-  const { data: profiles, error: profilesError } = await supabaseAdmin.from("profiles").select("user_id, role");
-  // 42P01 = migration 0006 not applied yet - degrade to "no roles assigned"
-  // rather than failing the whole page.
-  const roleByUserId = new Map((profilesError ? [] : (profiles ?? [])).map((p) => [p.user_id, p.role]));
+  const { data: profiles, error: profilesError } = await supabaseAdmin
+    .from("profiles")
+    .select("user_id, role, status, assigned_site_id, full_name");
+  // 42P01 = migration 0006/0009 not applied yet - degrade to "no roles
+  // assigned" rather than failing the whole page.
+  const profileByUserId = new Map((profilesError ? [] : (profiles ?? [])).map((p) => [p.user_id, p]));
 
-  const rows = usersPage.users.map((u) => ({
-    user_id: u.id,
-    email: u.email ?? null,
-    created_at: u.created_at,
-    role: roleByUserId.get(u.id) ?? null,
-  }));
+  const rows = usersPage.users.map((u) => {
+    const profile = profileByUserId.get(u.id);
+    return {
+      user_id: u.id,
+      email: u.email ?? null,
+      full_name: profile?.full_name ?? null,
+      created_at: u.created_at,
+      last_sign_in_at: u.last_sign_in_at ?? null,
+      role: profile?.role ?? null,
+      status: profile?.status ?? "active",
+      assigned_site_id: profile?.assigned_site_id ?? null,
+    };
+  });
 
   return ok(rows);
 }

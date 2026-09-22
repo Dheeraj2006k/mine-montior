@@ -136,6 +136,14 @@ them.
    re-run an already-applied migration or renumber files.
 3. Seed a site row and demo nodes (see `tools/simulator/` for a scripted
    way to generate demo sensor activity once the schema exists).
+4. Bootstrap the demo administrator: `npm run seed:admin`. Creates/syncs
+   `admin@iris.local` / `test123` (**local/demo only** — override via
+   `IRIS_ADMIN_EMAIL`/`IRIS_ADMIN_PASSWORD` for any real deployment) with
+   `role = admin` via Supabase Auth's admin API — never as a plaintext
+   password in an application table. Every other signup at `/signup`
+   becomes `role = viewer` automatically. See
+   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#authentication--authorization-rbac)
+   for the full RBAC model.
 
 ## 10. InSAR data / import workflow
 
@@ -215,8 +223,19 @@ The UI is written to make this distinction hard to miss — see
 - Every table has RLS enabled; the Data Monitor's only path to a table is
   a server-side allowlist (`src/lib/data-monitor/registry.ts`) — there is
   no generic database browser or arbitrary-table access anywhere.
-- Role checks (`requireRole`) are enforced server-side on every
-  mutating/role-restricted route, not just hidden in the UI.
+- Role/permission checks (`requireRole`, `requirePermission`,
+  `requireRolePage`) are enforced server-side on every read, mutating, and
+  admin-only route and page — not just hidden in the nav. A signed-in
+  session with no `role` claim resolves to `viewer`, never `admin`; the
+  client can never assert its own role.
+- Every new signup is `role = viewer` by default (a database trigger, not
+  client logic) — nobody can choose `operator`/`admin` at signup.
+- A deactivated account (`profiles.status = 'inactive'`) is denied all
+  application access on the next request, regardless of role.
+- Role changes, activation/deactivation, role resets, and site-ownership
+  transfers are all admin-only and written to an audit trail
+  (`GET /api/admin/audit`) — see
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#authentication--authorization-rbac).
 - `/api/ingest` requires a shared secret (`GATEWAY_SHARED_SECRET`) header.
 
 ## 17. Data provenance

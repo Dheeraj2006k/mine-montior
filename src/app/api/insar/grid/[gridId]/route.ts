@@ -3,8 +3,12 @@ import { ok, fail } from "@/lib/api/envelope";
 import { cellCoherenceQuality, toDisplacementMm } from "@/lib/insar-grid/coherence";
 import type { InsarGridCellDetail } from "@/lib/insar-grid/types";
 import { DEMO_SITE_ID as SITE_ID } from "@/lib/config/site";
+import { requireRole } from "@/lib/auth/roles";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ gridId: string }> }) {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { gridId: gridIdParam } = await params;
   const gridId = Number(gridIdParam);
   if (!Number.isInteger(gridId)) {

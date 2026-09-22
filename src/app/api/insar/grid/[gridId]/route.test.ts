@@ -65,6 +65,10 @@ vi.mock("@/lib/db/supabase-server", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/roles", () => ({
+  requireRole: vi.fn(async () => null),
+}));
+
 import { GET } from "./route";
 
 function requestFor(gridId: string) {

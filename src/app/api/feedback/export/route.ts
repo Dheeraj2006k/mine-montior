@@ -1,8 +1,14 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 // PRD §8.5 / §9 Stage 10: the label-acquisition mechanism for the ML team.
+// Not part of any dashboard nav flow - admin-gated like other raw data
+// exports rather than left open to any authenticated session.
 export async function GET(request: Request) {
+  const denied = await requireRole("admin");
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");

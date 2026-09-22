@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "simulate": "node tools/simulator/index.mjs",
-    "simulate:reset": "node tools/simulator/reset.mjs"
+    "simulate:reset": "node tools/simulator/reset.mjs",
+    "seed:admin": "node tools/seed-admin.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

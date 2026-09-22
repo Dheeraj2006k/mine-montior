@@ -112,20 +112,93 @@ browser -> /api/data-monitor/[table] -> getTableEntry(table) allowlist check
         -> requireRole(entry.minRole) -> supabaseAdmin.from(entry.key).select(entry.columns)
 ```
 
-## Authentication & authorization
+## Authentication & authorization (RBAC)
+
+```
+Supabase Auth (email/password)
+    v
+profiles table (role, status, assigned_site_id) - auto-created viewer
+    v                                              row on signup (migration 0009 trigger)
+role: viewer | operator | admin
+    v
+site access / ownership (sites.owner_user_id, profiles.assigned_site_id)
+    v
+permission matrix (src/lib/auth/permissions.ts)
+```
 
 - Supabase Auth (email/password) via `@supabase/ssr`; `src/middleware.ts`
   protects `/dashboard`, `/nodes`, `/alerts`, `/twin`, `/admin`,
-  `/system`, `/setup`, `/predictions`, `/insar` and redirects
-  unauthenticated requests to `/login`.
-- Application roles (`viewer` < `operator` < `admin`) live in the
-  `profiles` table, enforced server-side per route via
-  `requireRole(minRole)` (`src/lib/auth/roles.ts`) - never enforced by
-  hiding a button in the frontend alone.
+  `/system`, `/setup`, `/predictions`, `/insar` - redirecting
+  unauthenticated requests to `/login`, and deactivated accounts
+  (`profiles.status = 'inactive'`) to `/login?error=inactive` (signing them
+  out first).
+- **Roles.** `viewer` < `operator` < `admin`, stored on the `profiles`
+  table (`supabase/migrations/0006_profiles.sql`, hardened in
+  `0009_rbac_hardening.sql`). Every new Supabase Auth signup gets a
+  `profiles` row via an `on_auth_user_created` trigger with
+  `role = 'viewer'` - the least-privilege default is a real column default
+  plus a trigger, not something application code has to remember to set.
+  A pre-migration account with no profile row also resolves to
+  viewer/active (`src/lib/auth/roles.ts` `getCurrentUserRole`), never
+  admin - there is no "default to admin" fallback in this build.
+- **Permissions.** `src/lib/auth/permissions.ts` is the single source of
+  truth for what each role can do (`dashboard.view`, `alerts.acknowledge`,
+  `roles.manage`, `ownership.manage`, ...). Every route, layout, and page
+  calls one of four shared helpers in `src/lib/auth/roles.ts` rather than
+  comparing role strings inline:
+  - `requireRole(min)` / `requirePermission(permission)` - API route
+    guards, return a 401/403 `NextResponse` or `null` (proceed).
+  - `requireRolePage(min)` - Server Component/layout guard, redirects
+    instead of returning JSON (used by every `/admin/*` and `/setup`
+    page as defense in depth on top of the API-level guard).
+  - `hasRole(role, min)` - synchronous boolean for client components that
+    already have a resolved role (e.g. disabling an Acknowledge button for
+    a viewer rather than just letting the API reject it).
+  Nav visibility (`src/components/layout/app-shell.tsx` `visibleFor`) is
+  presentation only - hiding a link is a UX courtesy, never the security
+  boundary; every API route re-checks independently.
+- **Site ownership.** Single-tenant prototype (`src/lib/config/site.ts`),
+  so ownership is one column: `sites.owner_user_id`. "Assigned users" is
+  every `profiles` row whose `assigned_site_id` matches the site.
+  Transfers go through `/api/admin/ownership` (admin-only,
+  `requirePermission("ownership.manage")`), which validates the new owner
+  exists and is active, updates the owner column atomically, and always
+  writes an audit row with the previous and new owner - history is
+  preserved via the audit trail rather than by deleting anything.
+- **Audit.** Role changes, activation/deactivation, role resets, and
+  ownership transfers are written to the existing generic `audit_log`
+  table (shared with the alert pipeline's own audit rows) via
+  `src/lib/auth/audit.ts`, with `actor_user_id`/`target_user_id` columns
+  (migration 0009) so they're queryable relationally. Read via
+  `GET /api/admin/audit` (admin-only) and the `/admin/audit` page.
 - RLS is enabled on every table; the anon/authenticated Postgres roles
   have no broad write access, and the service-role key (which bypasses
   RLS) is read only from `process.env` in server-only modules, never sent
-  to the browser.
+  to the browser. All RBAC mutations go through service-role API routes
+  guarded by the helpers above - the browser never gets a path to write
+  `profiles.role` or `sites.owner_user_id` directly.
+
+### Permission matrix
+
+| Permission | viewer | operator | admin |
+| --- | --- | --- | --- |
+| dashboard.view / map.view / alerts.view / insar.view / twin.view / readings.view | Y | Y | Y |
+| alerts.acknowledge / alerts.investigate / alerts.note | - | Y | Y |
+| nodes.operational_action (node registration) | - | Y | Y |
+| users.view / users.manage / roles.manage | - | - | Y |
+| ownership.manage / sites.manage | - | - | Y |
+| settings.manage / audit.view | - | - | Y |
+
+### Demo admin bootstrap
+
+`npm run seed:admin` (`tools/seed-admin.mjs`) creates or upgrades the
+bootstrap administrator via Supabase Auth's admin API - it never writes a
+password into any application table. Credentials come from
+`IRIS_ADMIN_EMAIL` / `IRIS_ADMIN_PASSWORD`, defaulting to the documented
+local/demo values (`admin@iris.local` / `test123`) only when unset; see
+`docs/DEMO_GUIDE.md`. The script is idempotent and never resets an
+existing user's password - re-running it just re-syncs that account's
+`profiles` row to `role = admin, status = active`.
 
 ## Known, deliberately-deferred item
 

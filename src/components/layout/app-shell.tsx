@@ -57,13 +57,19 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
     ],
   },
   {
-    label: "Admin",
+    label: "Operations",
+    items: [{ href: "/admin/blasts", label: "Blast schedule", icon: BlastIcon, minRole: "operator" }],
+  },
+  {
+    label: "Admin Control Center",
     items: [
       { href: "/setup", label: "Site setup", icon: GearIcon, minRole: "admin" },
-      { href: "/admin/blasts", label: "Blast schedule", icon: BlastIcon, minRole: "operator" },
+      { href: "/admin/users", label: "Users", icon: GearIcon, minRole: "admin" },
+      { href: "/admin/roles", label: "Role & access", icon: GearIcon, minRole: "admin" },
+      { href: "/admin/ownership", label: "Site ownership", icon: GearIcon, minRole: "admin" },
       { href: "/admin/contacts", label: "Contacts", icon: ContactsIcon, minRole: "admin" },
       { href: "/admin/notifications", label: "Notification log", icon: BellIcon, minRole: "admin" },
-      { href: "/admin/users", label: "Users & roles", icon: GearIcon, minRole: "admin" },
+      { href: "/admin/audit", label: "Audit", icon: GearIcon, minRole: "admin" },
     ],
   },
 ];
@@ -117,20 +123,24 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
 function useSession() {
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [assignedSiteId, setAssignedSiteId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
     fetch("/api/me")
       .then((r) => (r.ok ? r.json() : null))
-      .then((body) => setRole(body?.data?.role ?? null))
+      .then((body) => {
+        setRole(body?.data?.role ?? null);
+        setAssignedSiteId(body?.data?.assigned_site_id ?? null);
+      })
       .catch(() => setRole(null));
   }, []);
 
-  return { email, role };
+  return { email, role, assignedSiteId };
 }
 
-function AccountFooter({ email, role }: { email: string | null; role: AppRole | null }) {
+function AccountFooter({ email, role, assignedSiteId }: { email: string | null; role: AppRole | null; assignedSiteId: string | null }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
@@ -159,8 +169,9 @@ function AccountFooter({ email, role }: { email: string | null; role: AppRole | 
             {email ?? "..."}
           </span>
           {role && (
-            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--faint)" }}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "var(--faint)" }}>
               {role}
+              {assignedSiteId && <span style={{ color: "var(--muted)" }}>&middot; {assignedSiteId}</span>}
             </span>
           )}
         </div>
@@ -180,7 +191,7 @@ function AccountFooter({ email, role }: { email: string | null; role: AppRole | 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { email, role } = useSession();
+  const { email, role, assignedSiteId } = useSession();
 
   const allItems = NAV_GROUPS.flatMap((g) => g.items);
 
@@ -218,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="mt-auto">
-          <AccountFooter email={email} role={role} />
+          <AccountFooter email={email} role={role} assignedSiteId={assignedSiteId} />
         </div>
       </aside>
 

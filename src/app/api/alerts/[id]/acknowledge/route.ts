@@ -1,12 +1,12 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
-import { requireRole } from "@/lib/auth/roles";
+import { getCurrentUserRole, requirePermission } from "@/lib/auth/roles";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const denied = await requireRole("operator");
+  const denied = await requirePermission("alerts.acknowledge");
   if (denied) return denied;
 
   const { id } = await params;
@@ -42,8 +42,11 @@ export async function POST(
     return fail("DATABASE_ERROR", "Failed to acknowledge alert", [{ issue: error?.message }], 500);
   }
 
+  const actor = await getCurrentUserRole();
+  const { data: actorUser } = await supabaseAdmin.auth.admin.getUserById(actor.userId!);
   await supabaseAdmin.from("audit_log").insert({
-    actor: "operator:dashboard", // no auth in this pass - see plan §13.2 for role-scoped actor once auth ships
+    actor: actorUser?.user?.email ? `${actor.role}:${actorUser.user.email}` : `${actor.role}:${actor.userId}`,
+    actor_user_id: actor.userId,
     action: "acknowledge",
     entity_table: "alerts",
     entity_id: String(alertId),

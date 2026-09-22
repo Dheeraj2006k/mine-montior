@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
-import { requireRole } from "@/lib/auth/roles";
+import { getCurrentUserRole, requireRole } from "@/lib/auth/roles";
+import { recordAdminAudit } from "@/lib/auth/audit";
 
 const VALID_ROLES = ["viewer", "operator", "admin"];
 
@@ -14,6 +15,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return fail("VALIDATION_FAILED", `role must be one of ${VALID_ROLES.join(", ")}`, [], 400);
   }
 
+  const { data: before } = await supabaseAdmin.from("profiles").select("role").eq("user_id", userId).maybeSingle();
+
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .upsert({ user_id: userId, role: body.role, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
@@ -26,6 +29,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     return fail("DATABASE_ERROR", "Failed to set role", [{ issue: error?.message }], 500);
   }
+
+  const actor = await getCurrentUserRole();
+  const { data: actorUser } = await supabaseAdmin.auth.admin.getUserById(actor.userId!);
+  await recordAdminAudit({
+    actorUserId: actor.userId!,
+    actorEmail: actorUser?.user?.email ?? null,
+    action: "role_changed",
+    entityTable: "profiles",
+    entityId: userId,
+    targetUserId: userId,
+    fromState: before?.role ?? null,
+    toState: body.role,
+  });
 
   return ok(data);
 }

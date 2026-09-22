@@ -2,10 +2,14 @@ import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok } from "@/lib/api/envelope";
 import { computeNodeHealth, type ReadingLike } from "@/lib/domain/node-health";
 import { isVoiceDemoMode } from "@/lib/adapters/voice-adapter";
+import { requireRole } from "@/lib/auth/roles";
 
 type DependencyStatus = "ok" | "degraded" | "down";
 
 export async function GET() {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const dependencies: { name: string; status: DependencyStatus; detail: string }[] = [];
 
   // Database reachability

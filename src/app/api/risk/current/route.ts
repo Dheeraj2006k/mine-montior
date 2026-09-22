@@ -1,7 +1,11 @@
 import { supabaseAdmin } from "@/lib/db/supabase-server";
 import { ok, fail } from "@/lib/api/envelope";
+import { requireRole } from "@/lib/auth/roles";
 
 export async function GET() {
+  const denied = await requireRole("viewer");
+  if (denied) return denied;
+
   const { data: nodes, error: nodesError } = await supabaseAdmin
     .from("nodes")
     .select("node_id, label")
