@@ -4,6 +4,13 @@ import { requireRole } from "@/lib/auth/roles";
 import { DEMO_SITE_ID as SITE_ID } from "@/lib/config/site";
 
 export async function GET() {
+  // Matches the page guard (requireRolePage("operator") on /admin/blasts)
+  // and the POST/DELETE handlers below - this GET was the one handler in
+  // the blast-schedule route pair with no server-side check at all, found
+  // during a full RBAC audit sweep.
+  const denied = await requireRole("operator");
+  if (denied) return denied;
+
   const { data, error } = await supabaseAdmin
     .from("blast_schedule")
     .select("*")

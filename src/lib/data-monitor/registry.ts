@@ -1,8 +1,10 @@
-// Duplicated from src/lib/auth/roles.ts (not imported) so this file stays
-// safely importable from client components - roles.ts pulls in
-// next/headers and the service-role client, which must never end up in a
-// browser bundle.
-type AppRole = "viewer" | "operator" | "admin";
+// Imported from src/lib/auth/permissions.ts, not src/lib/auth/roles.ts -
+// this file must stay safely importable from client components
+// (system/data/page.tsx), and roles.ts pulls in next/headers and the
+// service-role client, which must never end up in a browser bundle.
+// permissions.ts is the actual role/permission source of truth and has no
+// server-only dependencies, so it's safe here without duplicating the type.
+import type { AppRole } from "@/lib/auth/permissions";
 
 // Single source of truth for the Data Monitor (Objective 2/Phase 2). Every
 // table the explorer can show is listed here, explicitly - the API route
@@ -273,19 +275,25 @@ export const TABLE_REGISTRY: Record<string, TableEntry> = {
     displayName: "Users / Profiles",
     classification: "ADMIN_PII",
     minRole: "admin",
-    columns: ["user_id", "role", "full_name", "created_at", "updated_at"],
+    columns: ["user_id", "role", "status", "assigned_site_id", "full_name", "created_at", "updated_at"],
     primaryKey: "user_id",
     timestampField: "updated_at",
     defaultOrderDesc: true,
-    filterable: [{ column: "role", type: "eq", label: "Role" }],
-    description: "Application role assignments (viewer/operator/admin). No auth credentials of any kind live here or are ever returned.",
+    filterable: [
+      { column: "role", type: "eq", label: "Role" },
+      { column: "status", type: "eq", label: "Status" },
+    ],
+    description: "Application role assignments (viewer/operator/admin), account status, and site assignment. No auth credentials of any kind live here or are ever returned.",
   },
   audit_log: {
     key: "audit_log",
     displayName: "Audit Log",
     classification: "SYSTEM",
     minRole: "admin",
-    columns: ["id", "actor", "action", "entity_table", "entity_id", "from_state", "to_state", "channel", "detail", "occurred_at"],
+    columns: [
+      "id", "actor", "actor_user_id", "action", "entity_table", "entity_id",
+      "target_user_id", "from_state", "to_state", "channel", "detail", "occurred_at",
+    ],
     primaryKey: "id",
     timestampField: "occurred_at",
     defaultOrderDesc: true,
@@ -293,7 +301,7 @@ export const TABLE_REGISTRY: Record<string, TableEntry> = {
       { column: "entity_table", type: "eq", label: "Table" },
       { column: "action", type: "eq", label: "Action" },
     ],
-    description: "Who changed what alert/entity state, when.",
+    description: "Who changed what alert/entity/admin-RBAC state, when - actor_user_id/target_user_id (migration 0009) let RBAC actions be traced to real users.",
   },
 };
 

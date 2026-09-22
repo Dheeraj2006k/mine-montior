@@ -63,17 +63,38 @@ export function insarFillOpacity(quality: "GOOD" | "LOW"): number {
   return quality === "GOOD" ? GOOD_COHERENCE_OPACITY : LOW_COHERENCE_OPACITY;
 }
 
-/** MapLibre data-driven paint expression mirroring insarFillColor exactly. */
+/**
+ * MapLibre data-driven paint expression mirroring insarFillColor exactly.
+ *
+ * Bug this fixes: raw hex-string stop outputs (e.g. "#2166ac") inside an
+ * `interpolate` expression type-check fine when `interpolate` is used
+ * directly as a paint property value (the property's declared type, Color,
+ * gives the literals a type hint) - but here `interpolate` is nested as the
+ * fallback branch of an outer `case`. MapLibre's expression type-checker
+ * does not propagate that Color hint down into the nested `interpolate`, so
+ * each bare string stop is inferred as type `string`, and `interpolate`
+ * requires interpolatable output types (number/color) - failing with "Type
+ * string is not interpolatable" (confirmed against the real
+ * @maplibre/maplibre-gl-style-spec type-checker, not just the mocked map
+ * stub `insar-grid-layer.test.ts` uses). `map.addLayer()` does not throw
+ * when this happens - MapLibre catches the compile error internally and
+ * fires a map `error` event instead - so the source, outline layers, and
+ * click handlers in addLayers() below all still get set up normally; only
+ * the fill layer (the colored polygons) silently never gets added. Wrapping
+ * every stop output in `["to-color", ...]` gives each one an explicit,
+ * unambiguous Color type so `interpolate` accepts them regardless of
+ * nesting context.
+ */
 export function insarFillColorExpression(): unknown[] {
   return [
     "case",
     ["==", ["get", "los_displacement_mm"], null],
-    INSAR_NO_DATA_COLOR,
+    ["to-color", INSAR_NO_DATA_COLOR],
     [
       "interpolate",
       ["linear"],
       ["get", "los_displacement_mm"],
-      ...DIVERGING_STOPS.flatMap(([v, c]) => [v, c]),
+      ...DIVERGING_STOPS.flatMap(([v, c]) => [v, ["to-color", c]]),
     ],
   ];
 }

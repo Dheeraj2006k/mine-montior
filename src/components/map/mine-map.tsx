@@ -11,6 +11,29 @@ import { InsarGridLayer } from "./insar-grid-layer";
 import { InsarToggle, InsarPairSelector, InsarLegend, InsarCellDetailPanel, InsarStatusBanner } from "./insar-controls";
 import { useInsarPairOptions } from "./use-insar-pair-options";
 
+// Bug fix (production /insar): MapLibre's default worker script is derived
+// from `import.meta.url` at runtime and internally imports a sibling chunk
+// via a relative, un-hashed specifier (`./maplibre-gl-shared.mjs`). Next.js
+// (Turbopack and webpack alike) content-hashes that sibling chunk's
+// filename without rewriting the import inside the worker, so the browser
+// requests a literal `.../maplibre-gl-shared.mjs` that 404s - the worker's
+// module graph fails to load, and EVERY GeoJSON/vector source in the app
+// silently never finishes tiling (no error surfaces: MapLibre only fires an
+// 'error' *page* event for the worker's own uncaught error, which nothing
+// here listens for). Symptoms: GeoJSON fill/line layers never render, and
+// nothing depending on them (queryRenderedFeatures, click hit-testing)
+// ever fires - while anything NOT worker-dependent (raster basemap tiles,
+// DOM markers, fitBounds math on the already-fetched data) works normally,
+// which is exactly what made the InSAR grid overlay look selectively
+// broken. Fix: serve maplibre-gl's own prebuilt worker + shared chunk
+// unprocessed from /public (see public/maplibre-worker/, copied verbatim
+// from node_modules/maplibre-gl/dist/ - the one place those two files are
+// guaranteed to keep their matching, un-hashed names) and point MapLibre
+// at that pair explicitly, bypassing Next's bundler entirely for this one
+// asset pair. Must run before the first `new maplibregl.Map(...)` call -
+// module scope guarantees that regardless of import order.
+maplibregl.setWorkerUrl("/maplibre-worker/maplibre-gl-worker.mjs");
+
 export type MapNode = {
   node_id: number;
   label: string;
@@ -271,21 +294,30 @@ export function MineMap({
           {mineType === "longwall" ? "Longwall" : "Bord-and-Pillar"}
         </span>
       )}
-      <div
-        className="absolute bottom-2 left-2 z-10 rounded-lg px-2.5 py-2 flex flex-col gap-1 text-[10px]"
-        style={{ background: "color-mix(in srgb, var(--surface-2) 92%, transparent)", border: "1px solid var(--border)", color: "var(--muted)" }}
-      >
-        {(["normal", "warning", "unknown", "stale", "offline"] as const).map((s) => (
-          <span key={s} className="flex items-center gap-1.5 capitalize">
-            <span className="inline-block w-2 h-2 rounded-full" style={{ background: RISK_COLORS[s] }} />
-            {s}
+      {nodes.length > 0 && (
+        // Explains the node marker colors actually plotted on this map -
+        // shown whenever there's at least one node layer marker to explain
+        // (dashboard's default map, or the /insar analysis page's context
+        // markers), never as unconditional chrome. Kept independent of the
+        // InSAR toggle/legend (bottom-right, see InsarLegend): node health
+        // and InSAR displacement are different measurements and must not
+        // be visually merged into one legend.
+        <div
+          className="absolute bottom-2 left-2 z-10 rounded-lg px-2.5 py-2 flex flex-col gap-1 text-[10px]"
+          style={{ background: "color-mix(in srgb, var(--surface-2) 92%, transparent)", border: "1px solid var(--border)", color: "var(--muted)" }}
+        >
+          {(["normal", "warning", "unknown", "stale", "offline"] as const).map((s) => (
+            <span key={s} className="flex items-center gap-1.5 capitalize">
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: RISK_COLORS[s] }} />
+              {s}
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5 pt-1 mt-0.5" style={{ borderTop: "1px solid var(--border)" }}>
+            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ border: "1.5px dashed var(--faint)" }} />
+            mock position
           </span>
-        ))}
-        <span className="flex items-center gap-1.5 pt-1 mt-0.5" style={{ borderTop: "1px solid var(--border)" }}>
-          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ border: "1.5px dashed var(--faint)" }} />
-          mock position
-        </span>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

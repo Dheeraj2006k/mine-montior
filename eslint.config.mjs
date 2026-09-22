@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
     "tools/insar-importer/.venv/**",
     "tools/insar-importer/.pytest_cache/**",
     "tools/insar-importer/**/__pycache__/**",
+    // Vendored, unmodified maplibre-gl worker build output (copied
+    // verbatim from node_modules/maplibre-gl/dist/ - see the comment in
+    // src/components/map/mine-map.tsx) - not app source, never edited.
+    "public/maplibre-worker/**",
   ]),
 ]);
 

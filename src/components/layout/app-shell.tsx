@@ -21,8 +21,9 @@ import {
   SatelliteIcon,
   DatabaseIcon,
 } from "@/components/layout/nav-icons";
+import { roleAtLeast, type AppRole } from "@/lib/auth/permissions";
 
-export type AppRole = "viewer" | "operator" | "admin";
+export type { AppRole };
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }>; minRole: AppRole };
 
 // Grouped per the site's information architecture: primary monitoring is
@@ -74,13 +75,11 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
   },
 ];
 
-const ROLE_RANK: Record<AppRole, number> = { viewer: 0, operator: 1, admin: 2 };
-
 export function visibleFor(role: AppRole | null, item: Pick<NavItem, "minRole">): boolean {
   // While the role hasn't loaded yet, show everything rather than flash a
   // truncated menu - the API itself still enforces the real boundary.
   if (!role) return true;
-  return ROLE_RANK[role] >= ROLE_RANK[item.minRole];
+  return roleAtLeast(role, item.minRole);
 }
 
 function NavLink({
