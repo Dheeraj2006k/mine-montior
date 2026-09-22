@@ -6,13 +6,20 @@ type IrisEyeLogoProps = {
   className?: string;
 };
 
+// Real file dimensions are 826x738px (height/width = 0.8935) - the width/
+// height props below must match this ratio, not an approximation, or the
+// browser logs an image-aspect-ratio-mismatch warning (the rendered CSS
+// size, driven by `style` below, ends up disagreeing with the intrinsic
+// size these props declare).
+const IRIS_EYE_ASPECT_RATIO = 738 / 826;
+
 export function IrisEyeLogo({ size = 32, priority = false, className }: IrisEyeLogoProps) {
   return (
     <Image
       src="/iris-eye-transparent.png"
       alt="IRIS"
       width={size}
-      height={Math.round(size * 0.74)}
+      height={Math.round(size * IRIS_EYE_ASPECT_RATIO)}
       priority={priority}
       className={className}
       style={{

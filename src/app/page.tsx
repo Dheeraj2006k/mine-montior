@@ -94,7 +94,7 @@ export default function LandingPage() {
               src="/iris-eye-transparent.png"
               alt="IRIS eye badge"
               width={480}
-              height={430}
+              height={429}
               priority
               className="relative w-full max-w-[380px] md:max-w-[440px] h-auto iris-brand-eye"
             />
