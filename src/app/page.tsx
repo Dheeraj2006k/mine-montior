@@ -150,12 +150,23 @@ export default function LandingPage() {
       </main>
 
       <footer
-        className="w-full border-t px-4 md:px-8 py-6 text-center text-xs"
+        className="w-full border-t px-4 md:px-8 py-6 text-center text-xs flex flex-col items-center gap-2"
         style={{ borderColor: "var(--border)", color: "var(--faint)" }}
       >
-        IRIS - Intelligent Real-time Instability Sensing. Safer mines. Stable tomorrow. Node positions
-        shown throughout are mock, not GNSS. Predictions are model output, not empirically validated
-        against real failure data.
+        <span>
+          IRIS - Intelligent Real-time Instability Sensing. Safer mines. Stable tomorrow. Node positions
+          shown throughout are mock, not GNSS. Predictions are model output, not empirically validated
+          against real failure data.
+        </span>
+        <a
+          href="/docs/IRIS-Code-Smiths-Technical-Documentation.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+          style={{ color: "var(--muted)" }}
+        >
+          IRIS Technical Documentation
+        </a>
       </footer>
     </div>
   );
