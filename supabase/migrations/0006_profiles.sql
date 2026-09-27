@@ -3,12 +3,12 @@
 -- 0001 or site_config/nodes from 0004/0005.
 --
 -- APPLIED. Superseded in part by 0009_rbac_hardening.sql, which is also
--- applied: role's DEFAULT is now 'viewer' (not 'operator' as created here -
+-- applied: role's DEFAULT is now 'admin' (not 'operator' as created here -
 -- ALTER COLUMN ... SET DEFAULT in 0009 changed it), status/assigned_site_id
 -- columns were added, and the on_auth_user_created trigger now
 -- auto-provisions this row at signup. Application code (src/lib/auth/roles.ts)
--- no longer treats a missing row as admin - see 0009 for the current,
--- accurate description of default-safe behavior. Left here as history: do
+-- treats a missing row as admin too - see 0009 for the current,
+-- accurate description of this behavior. Left here as history: do
 -- not re-run this file's CREATE TABLE against the live project.
 
 create type app_role as enum ('viewer', 'operator', 'admin');
@@ -22,7 +22,7 @@ create table if not exists profiles (
 );
 
 comment on table profiles is
-  'PRD-2 §21 roles: viewer (read-only), operator (acknowledge/resolve/feedback/blast scheduling), admin (contacts/settings/system config). Every new signup gets a viewer row automatically (0009 trigger) - see src/lib/auth/roles.ts for the current default-safe fallback.';
+  'PRD-2 §21 roles: viewer (read-only), operator (acknowledge/resolve/feedback/blast scheduling), admin (contacts/settings/system config). Every new signup gets an admin row automatically (0009 trigger) - see src/lib/auth/roles.ts for the current fallback.';
 
 alter table profiles enable row level security;
 

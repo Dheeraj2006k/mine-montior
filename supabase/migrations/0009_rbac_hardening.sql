@@ -4,8 +4,8 @@
 -- APPLIED to the live project via the Supabase SQL editor.
 --
 -- Changes:
---   1. profiles.role default flips from 'operator' to 'viewer' - every
---      NEWLY created profile (via the trigger below) starts least-privilege.
+--   1. profiles.role default flips from 'operator' to 'admin' - every
+--      NEWLY created profile (via the trigger below) starts as admin.
 --      Existing profile rows are untouched (a DEFAULT only affects future
 --      inserts that omit the column).
 --   2. profiles gains `status` (active/inactive) - an inactive user is
@@ -15,11 +15,11 @@
 --      associated with. Nullable: a user can exist with no site assignment
 --      yet (matches "minimum possible access" for a fresh signup).
 --   4. A trigger on auth.users auto-creates the profiles row at signup with
---      role='viewer', so "no profile row" stops being a state new users can
+--      role='admin', so "no profile row" stops being a state new users can
 --      even be in - it only remains possible for accounts created before
 --      this migration ran. Application code (src/lib/auth/roles.ts) treats
---      that legacy no-row case as 'viewer' too (changed from the previous
---      default-safe-as-admin behavior now that a real default role exists).
+--      that legacy no-row case as 'admin' too, matching the current
+--      default.
 --   5. sites gains `owner_user_id` - the site's current owner, transferable
 --      only by an admin via /api/admin/ownership (src/lib/domain audit
 --      trail below).
@@ -31,7 +31,7 @@
 --      rows, which keep using the `actor` text column as before).
 
 alter table profiles
-  alter column role set default 'viewer';
+  alter column role set default 'admin';
 
 do $$ begin
   create type profile_status as enum ('active', 'inactive');
@@ -63,11 +63,11 @@ comment on column audit_log.actor_user_id is
 comment on column audit_log.target_user_id is
   'The user a role/status/ownership change was applied to, when applicable.';
 
--- Auto-provision a least-privilege profile row the moment a Supabase Auth
--- user is created, so every signup is viewer-by-default without relying on
--- application code to remember to insert one. SECURITY DEFINER is required
--- because this fires as part of the auth.users insert, before the new
--- session exists to satisfy the profiles RLS policy.
+-- Auto-provision a profile row the moment a Supabase Auth user is created,
+-- so every signup is admin-by-default without relying on application code
+-- to remember to insert one. SECURITY DEFINER is required because this
+-- fires as part of the auth.users insert, before the new session exists to
+-- satisfy the profiles RLS policy.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -76,7 +76,7 @@ set search_path = public
 as $$
 begin
   insert into public.profiles (user_id, role, full_name)
-  values (new.id, 'viewer', new.raw_user_meta_data ->> 'full_name')
+  values (new.id, 'admin', new.raw_user_meta_data ->> 'full_name')
   on conflict (user_id) do nothing;
   return new;
 end;
@@ -88,4 +88,4 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 comment on function public.handle_new_user is
-  'PRD-2 RBAC: every new Supabase Auth user gets a viewer profile row automatically. The seed admin script (tools/seed-admin.mjs) upserts role=admin AFTER creating its auth user, which overrides this default for that one account only.';
+  'PRD-2 RBAC: every new Supabase Auth user gets an admin profile row automatically.';

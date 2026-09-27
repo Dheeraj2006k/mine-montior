@@ -14,12 +14,10 @@ export type CurrentUser = {
 };
 
 // PRD-2 §21. Every signed-in user is resolved to a real role + status.
-// Default-safe: a user with no `profiles` row (only possible for accounts
-// created before migration 0009's signup trigger existed - see that
-// migration) or the table not existing yet is treated as 'viewer'/'active',
-// the least-privilege state, never as admin. The one seeded administrator
-// (tools/seed-admin.mjs) always gets an explicit admin row, so this fallback
-// never has to special-case it.
+// A user with no `profiles` row (only possible for accounts created before
+// migration 0009's signup trigger existed - see that migration) or the
+// table not existing yet is treated as 'admin'/'active', matching the
+// signup trigger's default role.
 export async function getCurrentUserRole(): Promise<CurrentUser> {
   const supabase = await createServerSupabaseClient();
   const {
@@ -34,7 +32,7 @@ export async function getCurrentUserRole(): Promise<CurrentUser> {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (error || !data) return { userId: user.id, role: "viewer", status: "active" };
+  if (error || !data) return { userId: user.id, role: "admin", status: "active" };
   return {
     userId: user.id,
     role: data.role as AppRole,

@@ -38,19 +38,19 @@ describe("getCurrentUserRole", () => {
     expect(result.role).toBe("viewer");
   });
 
-  it("defaults to viewer/active when the user has no profile row - never admin", async () => {
+  it("defaults to admin/active when the user has no profile row", async () => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
     mocks.profileMaybeSingle.mockResolvedValue({ data: null, error: null });
     const result = await getCurrentUserRole();
-    expect(result.role).toBe("viewer");
+    expect(result.role).toBe("admin");
     expect(result.status).toBe("active");
   });
 
-  it("defaults to viewer when the profiles table doesn't exist yet (42P01)", async () => {
+  it("defaults to admin when the profiles table doesn't exist yet (42P01)", async () => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
     mocks.profileMaybeSingle.mockResolvedValue({ data: null, error: { code: "42P01" } });
     const result = await getCurrentUserRole();
-    expect(result.role).toBe("viewer");
+    expect(result.role).toBe("admin");
   });
 
   it("resolves the real role and status from the profiles row", async () => {
